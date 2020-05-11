@@ -1,0 +1,6 @@
+Faire classe LogSystem_SD
+
+- begin(abseFileName) => Initialise la carte et ouvre le fichier passé en parametre.  Retourne false en cas de probleme
+- Faire une structure pour logrecord qui sera enregistrer dans le fichier
+- appendRecord() => Ajoute l'enregistrement a la fin du fichier. Retourne false en cas de probleme
+- 
