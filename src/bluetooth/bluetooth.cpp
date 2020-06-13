@@ -46,7 +46,7 @@ BLECharacteristic guidingCharacteristic(
   BLECharacteristic::PROPERTY_READ | 
   BLECharacteristic::PROPERTY_NOTIFY
 );
-// // Flight Data Download Caracteristic (R/O)
+// // // Flight Data Download Caracteristic (R/O)
 BLECharacteristic flightDataCharacteristic(
   BLEUUID((uint16_t)0x1A05), 
   BLECharacteristic::PROPERTY_READ | 
@@ -58,8 +58,12 @@ BLECharacteristic flightDataCharacteristic(
 CliCommand clii; // Passed from the setupBLE function to process the received commands
 
 void processCommand(const char* msg) {
-  Serial.println("Inside processCommand");
-  clii.handleReceivedMessage(msg);
+  // if (msg) {
+    // Serial.println("Inside processCommand");
+    clii.handleReceivedMessage(msg);
+  // } else {
+  //   Serial.println("No message/command received from bluetooth!");
+  // }
 }
 
 /* This function handles the server callbacks */
@@ -90,13 +94,16 @@ class CharacteristicCallbacks: public BLECharacteristicCallbacks {
      void onWrite(BLECharacteristic *characteristic) {
           //return the pointer to the register containing the current value of the characteristic
           std::string rxValue = characteristic->getValue(); 
+              //  Serial.print("Value to be passed to callback: ");
+              //  Serial.println(rxValue.c_str());
+          
           //check if there are data (size greater than zero)
           if (rxValue.length() > 0) {
  
               // for (int i = 0; i < rxValue.length(); i++) {
               //   Serial.print(rxValue[i]);
               //  }
-              //  Serial.println();
+
                Serial.print("Calling CLI.processSetCommand() with : "); Serial.println(rxValue.c_str());
                callback(rxValue.c_str());
           }
@@ -208,7 +215,7 @@ void updateBLEparams() {
 
 void updatePrefs() {
 
-    char param_str[20];
+    char param_str[50];
 
   sprintf(param_str, "%d|%d|%d|%d|%d|%d", _CONF.DEBUG, _CONF.BUZZER_ENABLE, _CONF.MEMORY_CARD_ENABLED, _CONF.DATA_RECOVERY_MODE, _CONF.FORMAT_MEMORY, _CONF.SCAN_TIME_INTERVAL);
   paramCharacteristic.setValue(param_str);
@@ -266,7 +273,7 @@ void uploadFlightData(lr::LogRecord logRecord) {
     str << logRecord._abort << ",";
     str << logRecord._temperature << ",";
     str << logRecord._battery << ",";
-    str << logRecord._gForces << endl;
+    str << logRecord._gForces; // << endl;
 
   // Serial.print(buffer);
 
@@ -279,56 +286,17 @@ void uploadFlightData(lr::LogRecord logRecord) {
 }
 
 
+// void BLESendChunks(std::string str)
+// {
+// 	std::string substr;
+// 	if (deviceConnected) {
+// 		for (int k = 0; k < str.length(); k += _min(str.length(), 20)) {
+// 			substr = str.substr(k, _min(str.length() - k, 20));
+// 			pCharacteristic->setValue(substr);
+// 			pCharacteristic->notify();
+// 		}
+// 	}
+// }
 
 
 
-// public:     // Public for now.  Maybe getter and setters would be more appropriate
-//     int32_t _timestamp;  // Milliseconds since start
-//     uint16_t int _altitude;
-//     int16_t _pitch;
-//     int16_t _roll;
-//     int16_t _pitchServo;
-//     int16_t _rollServo;
-//     bool _parachute;
-//     bool _abort;
-//     byte _temperature;
-//     byte _battery; // remaining volts x 10 
-//     byte _gForces;
-// };
-
-/**
-   Sensors (READ, NOTIFY)
-  ================================
-  gyro pitch, roll, yaw 
-  servos pitch, roll, yaw 
-  axel X, Ym Z
-  alti meters, pressure(mbar)
-  temp(C)
-  Battery Voltage(V)
-  PyroStatus 1,2,3,4  ()
-
-  Settings (READ, WRITE)
-  ================================
-  Servos offset 1,2,3,4
-  Servos orientation 1,2,3,4
-  Pitch PID P, I, D
-  Yaw PID P, I, D
-  Roll PID P, I, D
-  MAX_FINS_TRAVEL (degrees)
-   PyroTest 1,2,3,4  (boutons)
-
-  APOGEE_DIFF_METERS 10               // Used to specify minimum altitude for liftoff and minimum decent for parachute deployment. 
-  EXCESSIVE_ANGLE_THRESHOLD 50        // Used to specify maximum angle before abort sequence is initiated.
-  SCAN_TIME_INTERVAL 100              // Used to specify the refresh rate in mili-seconds of the instruments (altimeter and gyroscope).
-  PARACHUTE_DELAY 1500 
-
-  DEBUG 1                             // Set to 1 to display debug info to the serial console. Set to 0 otherwise.
-  BUZZER_ENABLE 1                     // Set to 1 to enable the buzzer. Set to 0 otherwise.
-  MEMORY_CARD_ENABLED 0               // Set to 1 to activate the logging system.  0 to disable it (for testing)
-  DATA_RECOVERY_MODE 0                // Set to 1 to read collected data from memory: 0 to save data to memory
-  FORMAT_MEMORY 0   
-
-
-
-
-*/

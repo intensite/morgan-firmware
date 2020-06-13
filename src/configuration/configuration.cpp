@@ -78,6 +78,13 @@ Configuration::Configuration() {
     this->X_GYRO_OFFSETS = 41;
     this->Y_GYRO_OFFSETS = 41;
     this->Z_GYRO_OFFSETS = 31;
+    // IMU CALIBRATION #2
+    this->X_ACCEL_OFFSETS = -2932;
+    this->Y_ACCEL_OFFSETS = -293;
+    this->Z_ACCEL_OFFSETS = 928;
+    this->X_GYRO_OFFSETS = 165;
+    this->Y_GYRO_OFFSETS = -14;
+    this->Z_GYRO_OFFSETS = -17;
 }
 
 Configuration& Configuration::instance() {

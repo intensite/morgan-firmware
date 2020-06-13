@@ -33,7 +33,7 @@ void readDataToBLE() {
         for(uint32_t i = 0; i < reccount; i++) {
             lr::LogRecord logRecord = lr::LogSystem::getLogRecord(i);
             // logRecord.writeToSerial();
-            uploadFlightData(logRecord);
+            //uploadFlightData(logRecord);
             delay(100);
             Serial.print("Sending Rec#: ");Serial.println(i);
         }
