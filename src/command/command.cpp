@@ -52,11 +52,17 @@ void CliCommand::handleSerial() {
     // Serial.println("End of handleSerial() function...");
 }
 
-void CliCommand::handleReceivedMessage(const char* msg)
+void CliCommand::handleReceivedMessage(char* msg)
 {
-    // Serial.println("Serial message received!");
+    std::string str(msg);
+    
+    // Serial.println("Message received!");
+    // Serial.println(msg);
 
-    this->cli.parse(msg);
+    // Get rid on the double quotes from the msg string
+    str.erase(std::remove(str.begin(),str.end(),'\"'),str.end());
+
+    this->cli.parse(str.c_str());
 
     // Check if a new error occurred
     if(this->cli.errored()) {
