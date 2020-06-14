@@ -22,8 +22,8 @@ It was built with the following requirements in mind:
 * And the all important flashing RGB Led and Piezzo Buzzer :)
 
 
-## ~~~Bluetooth~~~ WebSocket WIFI WEB App
-A Web ~~~Bluetooth~~~ app is used to configure the MORGAN flight computer. Its project page is https://github.com/intensite/morgan-app
+## ~~Bluetooth~~ WebSocket WIFI WEB App
+A Web ~~Bluetooth~~ app is used to configure the MORGAN flight computer. Its project page is https://github.com/intensite/morgan-app
 
 The Bluetooth portion has been deprecated for now had it had stability problems that was crashing the flight computer.  The code was commented out for future rework if necessary.
 
