@@ -17,12 +17,16 @@ It was built with the following requirements in mind:
 * On board 64Mb Flash memory + optional SD Card for data logging.
 * Battery voltage monitoring (regulated from 7~12v down to 5v and 3.3v).
 * GPS capability (not used yet)
-* Bluetooth bi-directional communication for parameters configuration and pre-flight systems tests.
+* ~~~Bluetooth bi-directional communication for parameters configuration and pre-flight systems tests.~~~
+* WIFI bi-directional communication for parameters configuration and pre-flight systems tests.
 * And the all important flashing RGB Led and Piezzo Buzzer :)
 
 
-## Bluetooth WEB App
-A Web-Bluetooth app is used to configure the MORGAN flight computer. Its project page is https://github.com/intensite/morgan-app
+## ~~~Bluetooth~~~ WebSocket WIFI WEB App
+A Web ~~~Bluetooth~~~ app is used to configure the MORGAN flight computer. Its project page is https://github.com/intensite/morgan-app
+
+The Bluetooth portion has been deprecated for now had it had stability problems that was crashing the flight computer.  The code was commented out for future rework if necessary.
+
 
 ## Note:
 
