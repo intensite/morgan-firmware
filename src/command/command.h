@@ -11,7 +11,7 @@ class CliCommand {
 
     public:
         CliCommand();
-        void handleReceivedMessage(const char* msg);
+        void handleReceivedMessage(char* msg);
         void handleSerial();
         void processGetCommand(const char*);
         void processSetCommand(const char* setting, const char* value);

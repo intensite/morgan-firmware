@@ -15,10 +15,10 @@
 // #include "./storage/LogSystem_SD.h"
 #include "./parachute/parachute.h"
 #include <Wire.h>
-#include "./bluetooth/bluetooth.h"
+// #include "./bluetooth/bluetooth.h"
+#include "./websocket/ws.h"
 #include "./command/command.h"
 #include "./lib/TaskScheduler.h"
-// #include "WiFi.h"
 
 
 // Configuration& conf = _CONF; //Configuration::instance();
@@ -256,7 +256,8 @@ void setup() {
     ledStatus = LOW;
 
     // Setup bluetooth
-    setupBLE(cli);
+    // setupBLE(cli);
+    setupWebSocket(cli);
 
     setupServo();
     
@@ -375,6 +376,8 @@ void loop() {
 
         
         heartBeat();
+
+        processWebSocket();
 
         cli.handleSerial();
     }
