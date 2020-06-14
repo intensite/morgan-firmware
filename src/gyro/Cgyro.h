@@ -2,7 +2,8 @@
 // #include "MPU6050.h"
 #include "../lib/I2Cdev.h"
 // #include "helper_3dmath.h"
-#include "../lib/MPU6050_6Axis_MotionApps20.h"
+// #include "../lib/MPU6050_6Axis_MotionApps20.h"
+#include "../lib/MPU6050_6Axis_MotionApps_V6_12.h"
 #include "../configuration/configuration.h"
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
@@ -13,7 +14,7 @@
 
 #define OUTPUT_READABLE_YAWPITCHROLL
 // #define OUTPUT_READABLE_REALACCEL
-//#define OUTPUT_READABLE_EULER
+// #define OUTPUT_READABLE_EULER
 //#define OUTPUT_READABLE_WORLDACCEL
 
 
@@ -195,7 +196,7 @@ void Gyro::ProcessGyroData() {
 
             // // Convert ypr from radiant to degree
             ypr[_CONF.YAW_AXIS] = (ypr[_CONF.YAW_AXIS] * 180/M_PI);
-            ypr[_CONF.PITCH_AXIS] = (ypr[_CONF.PITCH_AXIS] * 180/M_PI);
+            ypr[_CONF.PITCH_AXIS] = (ypr[_CONF.PITCH_AXIS] * 180/M_PI ); 
             ypr[_CONF.ROLL_AXIS] = (ypr[_CONF.ROLL_AXIS] * 180/M_PI);
             
         #endif
