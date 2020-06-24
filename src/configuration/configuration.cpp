@@ -71,20 +71,21 @@ Configuration::Configuration() {
     this->YAW_AXIS = 0;
     this->ROLL_AXIS = 1;
 
-    // IMU CALIBRATION
-    this->X_ACCEL_OFFSETS = -1067;
-    this->Y_ACCEL_OFFSETS = 823;
-    this->Z_ACCEL_OFFSETS = 559;
-    this->X_GYRO_OFFSETS = 41;
-    this->Y_GYRO_OFFSETS = 41;
-    this->Z_GYRO_OFFSETS = 31;
+    // // IMU CALIBRATION
+    // this->X_ACCEL_OFFSETS = -1067;
+    // this->Y_ACCEL_OFFSETS = 823;
+    // this->Z_ACCEL_OFFSETS = 559;
+    // this->X_GYRO_OFFSETS = 41;
+    // this->Y_GYRO_OFFSETS = 41;
+    // this->Z_GYRO_OFFSETS = 31;
     // IMU CALIBRATION #2
-    this->X_ACCEL_OFFSETS = -2932;
-    this->Y_ACCEL_OFFSETS = -293;
-    this->Z_ACCEL_OFFSETS = 928;
-    this->X_GYRO_OFFSETS = 165;
+    this->X_ACCEL_OFFSETS = -2900;
+    this->Y_ACCEL_OFFSETS = -275;
+    this->Z_ACCEL_OFFSETS = 944;
+    this->X_GYRO_OFFSETS = 120;
     this->Y_GYRO_OFFSETS = -14;
-    this->Z_GYRO_OFFSETS = -17;
+    this->Z_GYRO_OFFSETS = -19;
+    
 }
 
 Configuration& Configuration::instance() {

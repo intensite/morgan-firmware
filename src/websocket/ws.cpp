@@ -10,7 +10,7 @@
 
 // Constants
 const char *ssid = "ESP32-AP";
-const char *password =  "morgan";
+const char *password =  "morgan123";
 const int dns_port = 53;
 const int ws_port = 1337;
 uint8_t _client_num = NULL;

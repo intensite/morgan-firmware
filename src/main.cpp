@@ -205,7 +205,7 @@ int8_t persistData() {
         Serial.println("Probleme de storrage: verifier memoire pleine");
         return 0;
     } else {
-        Serial.println("Record saved: ");
+        // Serial.println("Record saved: ");
     }
     return 1;
 }
