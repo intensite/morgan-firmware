@@ -171,7 +171,7 @@ void Gyro::ProcessGyroData() {
 
             // clearing the buffer after every read apparently solve the FIFO overflow problem
             // https://arduino.stackexchange.com/a/10309
-            mpu.resetFIFO();  
+            //mpu.resetFIFO();  
         }
         #ifdef OUTPUT_READABLE_YAWPITCHROLL
             // display Euler angles in degrees
