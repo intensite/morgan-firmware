@@ -199,6 +199,10 @@ void Gyro::ProcessGyroData() {
             ypr[_CONF.PITCH_AXIS] = (ypr[_CONF.PITCH_AXIS] * 180/M_PI ); 
             ypr[_CONF.ROLL_AXIS] = (ypr[_CONF.ROLL_AXIS] * 180/M_PI);
             
+
+            // Serial.print(ypr[_CONF.PITCH_AXIS]); Serial.print("\t");
+            // Serial.print(ypr[_CONF.YAW_AXIS]); Serial.print("\t");
+            // Serial.println(ypr[_CONF.ROLL_AXIS]); //Serial.print("\t");
         #endif
 
         #ifdef OUTPUT_READABLE_EULER
