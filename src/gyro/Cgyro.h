@@ -178,7 +178,7 @@ void Gyro::ProcessGyroData() {
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-            //z_gforce = gravity.z;
+            z_gforce = gravity.z;
             
             // Serial.print("Gyro data:\t");
             // Serial.print(gyr.x);

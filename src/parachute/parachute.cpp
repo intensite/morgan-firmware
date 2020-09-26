@@ -2,6 +2,7 @@
 #include "parachute.h"
 #include "../config.h"
 #include "../led_color/led_color.h"
+#include "../configuration/configuration.h"
 // #include "../lib/TaskSchedulerDeclarations.h"
 // #include "../global.h"
 
@@ -26,7 +27,24 @@ bool deployParachute(void) {
 
     Serial.println("POP!!  Parachute deployed");
     
-    digitalWrite(PARACHUTE_IGNITER_PIN, true);
+    // digitalWrite(PARACHUTE_IGNITER_PIN, true);
+
+
+//TODO:  Improve this portion
+    if (_CONF.PYRO_1_FIRE_ALTITUDE != 0) {
+        activatePyro(1);
+    }
+    if (_CONF.PYRO_2_FIRE_ALTITUDE != 0) {
+        activatePyro(2);
+    }
+    if (_CONF.PYRO_3_FIRE_ALTITUDE != 0) {
+        activatePyro(3);
+    }
+    if (_CONF.PYRO_4_FIRE_ALTITUDE != 0) {
+        activatePyro(4);
+    }
+
+
     led_color(LED_COLOR_YELLOW);
     return true;
 }
@@ -37,22 +55,18 @@ void activatePyro(uint8_t channelNum) {
 
     Serial.print("Firing channel #");Serial.println(channelNum);
     switch(channelNum) {
-        // Serial.print("_CONF.FORMAT_MEMORY: "); Serial.println(_CONF.FORMAT_MEMORY);    
         case 1:
             digitalWrite(PYRO_CHANEL_1, true);
             //tPyroChannel_1_Off.enableDelayed();
             break;
-        // Serial.print("_CONF.FORMAT_MEMORY: "); Serial.println(_CONF.FORMAT_MEMORY);    
         case 2:
             digitalWrite(PYRO_CHANEL_2, true);
             //tPyroChannel_2_Off.enableDelayed();
             break;
-        // Serial.print("_CONF.FORMAT_MEMORY: "); Serial.println(_CONF.FORMAT_MEMORY);    
         case 3:
             digitalWrite(PYRO_CHANEL_3, true);
             //tPyroChannel_3_Off.enableDelayed();
             break;
-        // Serial.print("_CONF.FORMAT_MEMORY: "); Serial.println(_CONF.FORMAT_MEMORY);    
         case 4:
             digitalWrite(PYRO_CHANEL_4, true);
             //tPyroChannel_4_Off.enableDelayed();

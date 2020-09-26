@@ -191,8 +191,10 @@ int8_t persistData() {
     // LogRecord logRecord(
         millis(), 
         altitude.current_altitude, 
-        (int16_t) (gyro.ypr[_CONF.PITCH_AXIS] * 180/M_PI),  // Pitch: Must be improved
-        (int16_t) (gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI),  // Roll:  Must be improved
+        // (int16_t) (gyro.ypr[_CONF.PITCH_AXIS] * 180/M_PI),  // Pitch: Must be improved
+        // (int16_t) (gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI),  // Roll:  Must be improved
+        (int16_t) (gyro.ypr[_CONF.PITCH_AXIS]),  // Pitch: Must be improved
+        (int16_t) (gyro.ypr[_CONF.ROLL_AXIS]),  // Roll:  Must be improved
         g_servo_pitch, // Servo Pitch: ToDo
         g_servo_roll, // Servo Roll : ToDo
         is_parachute_deployed, 
