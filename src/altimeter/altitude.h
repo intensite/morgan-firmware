@@ -22,4 +22,5 @@ class Altitude {
         int16_t setupAlti();
         float processAltiData();
         Altitude();
+        bool detectApogee();
 };

@@ -98,19 +98,25 @@ float Altitude::processAltiData() {
         altitude_max = current_altitude;
     }
 
+    // Replace the previous_altitude with the current altitude for next pass.
+    previous_altitude = current_altitude;
+    return current_altitude;
+}
+
+bool Altitude::detectApogee() {
+
+    //@TODO:  Separate the appogee detection from the reading of the sensor for more flexibility
     // Check if Apogee was reached and beginig descent
     if(altitude_max > _CONF.APOGEE_DIFF_METERS) {  // Prevent on the ground and transport accident
-        // if((current_altitude - _CONF.APOGEE_DIFF_METERS) < altitude_max) {  
 
         if((current_altitude < altitude_max) && ((altitude_max - current_altitude) >= _CONF.APOGEE_DIFF_METERS))  {  
             // Here we should be going down.
             Serial.print(F("Apogee passed. Max altitude: "));
             Serial.println(altitude_max);
-            is_parachute_deployed = deployParachute();
+            is_parachute_deployed = deployParachute();  //@TODO: This call should probably be moved out of this class
+            return true;
         }
     }
 
-    // Replace the previous_altitude with the current altitude for next pass.
-    previous_altitude = current_altitude;
-    return current_altitude;
+    return false;
 }
