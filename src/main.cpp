@@ -49,17 +49,20 @@ bool ledStatus;
 // Scheduler
 Scheduler ts;
 
-// ================================================================
-// Tasks definition
-// ================================================================
 void flashLEDcb();
 void beepSequencecb();
 void updateBLEdiags_cb();
 void updateBLEparams_cb();
 void updateBLEGuidanceConfig_cb();
 void measureVoltage_cb();
+void abort_flight();
 bool detectLiftoff();
+void state_LAUNCHPAD();
+void state_THRUST_ST1();
 
+// ================================================================
+// Tasks definition
+// ================================================================
 Task tflashLED ( 1 * TASK_SECOND, -1, &flashLEDcb, &ts, true );
 Task tbeepSequence ( 2 * TASK_SECOND, -1, &beepSequencecb, &ts, true );
 Task tMeasureVoltage ( 10 * TASK_SECOND, -1, &measureVoltage_cb, &ts, true );
@@ -196,6 +199,7 @@ int8_t persistData() {
     lr::LogRecord logRecord(
     // LogRecord logRecord(
         millis(), 
+        currentState,
         altitude.current_altitude, 
         // (int16_t) (gyro.ypr[_CONF.PITCH_AXIS] * 180/M_PI),  // Pitch: Must be improved
         // (int16_t) (gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI),  // Roll:  Must be improved
@@ -326,7 +330,7 @@ void loop() {
     // The abort sequence was triggered (throw your arms in the air) exit the main loop
     // This is avaluated first
     if (is_abort) {
-        abort();
+        abort_flight();
         return;
     }
     
@@ -485,13 +489,20 @@ bool detectLiftoff() {
     }
 }
 
-void abort() {
+void abort_flight() {
     Serial.println("Abort sequence triggered"); 
 
     // LED RED
     digitalWrite(R_LED, LOW);
     digitalWrite(G_LED, HIGH);
     digitalWrite(B_LED, HIGH);
+}
+
+bool detectEngineThrust() {
+    
+}
+bool detectTouchDown() {
+
 }
 
 /****************************************************************************************************************************
@@ -537,8 +548,6 @@ void state_LAUNCHPAD() {
 
         // Chage state to Powered Flight
         currentState = THRUST_ST1;
-
-        //@TODO: Record the state change to datalog
     }   
 }
 
@@ -546,7 +555,10 @@ void state_THRUST_ST1() {
 
     // Read the altitude and process trajectory with the servos
     altitude.processAltiData();
-    altitude.detectApogee();
     processTrajectory(gyro.ypr);
-
+    
+    if(altitude.detectApogee()) {
+        // Chage state to Powered Flight
+        currentState = DESCENT;
+    }
 }

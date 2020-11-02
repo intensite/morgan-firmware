@@ -105,7 +105,7 @@ float Altitude::processAltiData() {
 
 bool Altitude::detectApogee() {
 
-    //@TODO:  Separate the appogee detection from the reading of the sensor for more flexibility
+    // Separate the appogee detection from the reading of the sensor for more flexibility
     // Check if Apogee was reached and beginig descent
     if(altitude_max > _CONF.APOGEE_DIFF_METERS) {  // Prevent on the ground and transport accident
 
