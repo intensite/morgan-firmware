@@ -2,7 +2,8 @@
 #include <Arduino.h>
 #include "./config.h"
 #include "./global.h"
-#include "./gyro/Cgyro.h"
+// #include "./gyro/Cgyro.h"
+#include "./gyro/gyro.h"
 #include "./altimeter/altitude.h"
 #include "./servo/fins_servo.h"
 #include "./flight_correct/correct.h"
@@ -436,7 +437,9 @@ void updateBLEdiags_cb() {  // Updated on a fast schedule
     // Called by task updateBLEdiags_cb
 
     if(!_CONF.DATA_RECOVERY_MODE) {
-        updateDiagnostics(gyro.ypr, gyro.aaWorld.x, gyro.aaWorld.y, gyro.aaWorld.z, altitude.current_altitude, altitude.temperature, 
+        // updateDiagnostics(gyro.ypr, gyro.aaWorld.x, gyro.aaWorld.y, gyro.aaWorld.z, altitude.current_altitude, altitude.temperature, 
+        //         altitude.pressure, altitude.humidity, voltage);
+        updateDiagnostics(gyro.ypr, gyro.accel[0], gyro.accel[1], gyro.accel[2], altitude.current_altitude, altitude.temperature, 
                 altitude.pressure, altitude.humidity, voltage);
     }
 }
@@ -511,6 +514,7 @@ bool detectTouchDown() {
  ****************************************************************************************************************************/
 void state_LAUNCHPAD() {
 
+    tflashLED.disable();  // DEBUG
 
     // Memory format  (Should maybe be moved to a pre-flight stage)
     if(_CONF.FORMAT_MEMORY) {

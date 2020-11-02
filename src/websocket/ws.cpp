@@ -111,7 +111,8 @@ void processWebSocket() {
   webSocket.loop();
 }
 
-void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage) {
+// void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage) {
+void updateDiagnostics(float ypr[3], float& ac_x, float& ac_y, float& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage) {
 
     if (deviceConnected) {
 
