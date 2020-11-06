@@ -112,7 +112,7 @@ void processWebSocket() {
 }
 
 // void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage) {
-void updateDiagnostics(float ypr[3], float& ac_x, float& ac_y, float& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage) {
+void updateDiagnostics(float ypr[3], float& ac_x, float& ac_y, float& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage, byte current_state) {
 
     if (deviceConnected) {
 
@@ -127,10 +127,12 @@ void updateDiagnostics(float ypr[3], float& ac_x, float& ac_y, float& ac_z, floa
         gyro[_CONF.ROLL_AXIS] = ypr[_CONF.ROLL_AXIS];
         gyro[_CONF.PITCH_AXIS] = ypr[_CONF.PITCH_AXIS];
 
-        sprintf(str, "T1|%.1f|%.1f|%.1f|%d|%d|%d|%.2f|%.2f|%.2f|%.2f|%.2f", 
+        sprintf(str, "T1|%.1f|%.1f|%.1f|%.1f|%.1f|%.1f|%.2f|%.2f|%.2f|%.2f|%.2f|%d", 
                 gyro[_CONF.YAW_AXIS], gyro[_CONF.PITCH_AXIS], gyro[_CONF.ROLL_AXIS], 
                 ac_x, ac_y, ac_z,
-                alti, temp, pressure, humidity, voltage);
+                alti, temp, pressure, humidity, voltage, current_state);
+
+        Serial.println(str); //  DEBUG ONLY
 
         /* Set the value */
         // diagCharacteristic.setValue(std::string (str));  // This is a value of a single byte
