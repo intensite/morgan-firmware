@@ -67,8 +67,11 @@ Configuration::Configuration() {
     this->PID_ROLL_Kd = 0.5;
 
     // IMU AXIS PHYSICAL LOCATION (ypr[3])
-    this->PITCH_AXIS = 2;
-    this->YAW_AXIS = 0;
+    // this->PITCH_AXIS = 2;
+    // this->YAW_AXIS = 0;
+    // this->ROLL_AXIS = 1;
+    this->PITCH_AXIS = 0;
+    this->YAW_AXIS = 2;
     this->ROLL_AXIS = 1;
 
     // // IMU CALIBRATION
