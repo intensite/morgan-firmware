@@ -175,9 +175,12 @@ void Gyro::Update_YPR_Data() {
         yaw   *= 180.0f / PI;
         roll  *= 180.0f / PI;
 
-        ypr[_CONF.YAW_AXIS] = yaw;
-        ypr[_CONF.PITCH_AXIS] = pitch;
-        ypr[_CONF.ROLL_AXIS] = roll;
+        // 
+        // Reorganize the IMU Axis in Rocket Body Axis
+        // With IMU mounted on flat top of the rocket 
+        ypr[_CONF.ROLL_AXIS] = yaw;
+        ypr[_CONF.YAW_AXIS] = pitch;
+        ypr[_CONF.PITCH_AXIS] = roll;
 
         accel[0] = ax;
         accel[1] = ay;
@@ -202,11 +205,15 @@ void Gyro::Update_YPR_Data() {
             // Serial.println(q[3]);
 
             // Print Acceleration
-            // Serial.println(" x\t  y\t  z  ");
+            Serial.println(" x\t  y\t  z  ");
             // Serial.print((int)(1000 * ax)); Serial.print('\t');
             // Serial.print((int)(1000 * ay)); Serial.print('\t');
             // Serial.print((int)(1000 * az));
             // Serial.println(" mg");
+            Serial.print(ax); Serial.print('\t');
+            Serial.print(ay); Serial.print('\t');
+            Serial.print(az);
+            Serial.println(" g");
 
             // Print Raw rotation (Gyro)
             // Serial.print((int)(gx)); Serial.print('\t');
@@ -218,10 +225,10 @@ void Gyro::Update_YPR_Data() {
             // Serial.print("rt: "); Serial.print(1.0f / deltat, 2); Serial.println(" Hz");
 
             // For Serial Ploter
-            Serial.print(yaw, 0); Serial.print(", ");
-            Serial.print(pitch, 0); Serial.print(", ");
-            Serial.print(roll, 0); Serial.print(", ");
-            Serial.println(z_gforce, 2);
+            // Serial.print(yaw, 0); Serial.print(", ");
+            // Serial.print(pitch, 0); Serial.print(", ");
+            // Serial.print(roll, 0); Serial.print(", ");
+            // Serial.println(z_gforce, 2);
         }
 }
 
