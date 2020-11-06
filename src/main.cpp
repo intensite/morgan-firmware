@@ -21,7 +21,6 @@
 #include "./command/command.h"
 #include "./lib/TaskScheduler.h"
 
-
 // Configuration& conf = _CONF; //Configuration::instance();
 
 enum State_enum {LAUNCHPAD, THRUST_ST1, THRUST_ST2, COASTING, DESCENT, CHUTE_DESCENT, LANDED };
@@ -41,7 +40,6 @@ unsigned long previousLaunchMillis = 0;   // Used for launch detection
 bool setup_error = false;
 State_enum currentState;
 
-
 Altitude altitude;
 Gyro gyro;
 float voltage = 0;
@@ -60,6 +58,7 @@ void abort_flight();
 bool detectLiftoff();
 void state_LAUNCHPAD();
 void state_THRUST_ST1();
+void displaySensorData();
 
 // ================================================================
 // Tasks definition
@@ -85,49 +84,6 @@ void IRAM_ATTR dmpDataReady() {
 }
  
 
-/*****************************************************************
- *  Used to display sensor data onthe cosole. Mainly to debug.
- *  Should no be used durring flight as it disturbs the interupts of the I2C
- * ***************************************************************/
-void displaySensorData() {
-    
-        // Debug stuff
-        // Serial.print(F("Pitch:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.PITCH_AXIS] * 180/M_PI));
-        // Serial.print(F("\tYaw:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.YAW_AXIS] * 180/M_PI));
-        // Serial.print(F("\tRoll:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI));
-        
-        // Serial.print(F("\tAltitude:"));
-        // Serial.print(altitude.current_altitude);
-
-        // Serial.print(F("\tTemperature:"));
-        // Serial.println(altitude.temperature);
-
-        // //***************************************************************************************
-        // // Plotter stuff
-        // //***************************************************************************************
-        // //Serial.print(F("Pitch:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.PITCH_AXIS])); Serial.print(",");
-        // //Serial.print(F("\tYaw:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.YAW_AXIS])); Serial.print(",");
-        // //Serial.print(F("\tRoll:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.ROLL_AXIS] )); Serial.print(",");
-        // //Serial.print(F("\tAltitude:"));
-        // Serial.print(altitude.current_altitude); Serial.print(",");
-        // //Serial.print(F("\tTemperature:"));
-        // Serial.println(altitude.temperature); 
-        // //***************************************************************************************
-
-        // /* Voltage mesurement */
-        // float temp;
-        // voltage = (float)analogRead(A3);// / 4096 * 38.846;
-        // // Serial.println(voltage);
-        // voltage = (float)(voltage / 4096 * 40.125);
-        // temp = (int8_t)(voltage * 10 + .5);
-        // Serial.println((float)(temp/10));
-} 
 
 
 void testSequence() {
@@ -154,34 +110,6 @@ void testSequence() {
     buzz(PIEZO_BUZZER, 2093, tone_delay);
     buzz(PIEZO_BUZZER, 0, tone_delay);
     Serial.println(F("End of tests..........."));
-}
-
-void debugParachute() {
-
-    // // Disable the test if the REMOVE_BEFORE_FLY jumper is not present 
-    // if (IS_READY_TO_FLY == LOW)
-    //     return;
-
-    // int16_t countdown = 10;
-    // // Serial.println("Debug mode. Press any key to deploy parachute....................");
-    // // while(Serial.available() == 0) { }  // There really is nothing between the {} braces
-    // // char x = Serial.read();
-
-    // while(countdown >=0) {
-    //     delay(1000);
-    //     buzz(PIEZO_BUZZER, 2637, 1000/12);
-    //     countdown--;
-    // }
-
-    // buzz(PIEZO_BUZZER, 2637, 1000/12);
-    // buzz(PIEZO_BUZZER, 2637, 1000/12);
-    // buzz(PIEZO_BUZZER, 2637, 1000/12);
-    // buzz(PIEZO_BUZZER, 2637, 1000/12);
-    // buzz(PIEZO_BUZZER, 2637, 10000/12);
-    // deployParachute();
-    // is_abort = true;
-    // is_parachute_deployed = true;
-    // return;
 }
 
 int8_t persistData() {
@@ -440,7 +368,7 @@ void updateBLEdiags_cb() {  // Updated on a fast schedule
         // updateDiagnostics(gyro.ypr, gyro.aaWorld.x, gyro.aaWorld.y, gyro.aaWorld.z, altitude.current_altitude, altitude.temperature, 
         //         altitude.pressure, altitude.humidity, voltage);
         updateDiagnostics(gyro.ypr, gyro.accel[0], gyro.accel[1], gyro.accel[2], altitude.current_altitude, altitude.temperature, 
-                altitude.pressure, altitude.humidity, voltage);
+                altitude.pressure, altitude.humidity, voltage, currentState);
     }
 }
 void updateBLEparams_cb() {  // Updated on a slower schedule
@@ -461,7 +389,7 @@ void measureVoltage_cb() {
         // int8_t temp;
         voltage = (float)analogRead(VOLTAGE);// / 4096 * 38.846;
         // Serial.println(voltage);
-        voltage = (float)(voltage / 4096 * 44.5);
+        voltage = (float)(voltage / 4096 * 50);
 
         // Debug
         // temp = (int8_t)(voltage * 10 + .5);
@@ -565,4 +493,93 @@ void state_THRUST_ST1() {
         // Chage state to Powered Flight
         currentState = DESCENT;
     }
+}
+
+
+/*****************************************************************
+ *  Used to display sensor data onthe cosole. Mainly to debug.
+ *  Should no be used durring flight as it disturbs the interupts of the I2C
+ * ***************************************************************/
+void displaySensorData() {
+    
+        // Debug stuff
+        // Serial.print(F("Pitch:"));
+        // Serial.print((int16_t)(gyro.ypr[_CONF.PITCH_AXIS] * 180/M_PI));
+        // Serial.print(F("\tYaw:"));
+        // Serial.print((int16_t)(gyro.ypr[_CONF.YAW_AXIS] * 180/M_PI));
+        // Serial.print(F("\tRoll:"));
+        // Serial.print((int16_t)(gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI));
+        
+        Serial.print(F("Accel_X:"));
+        Serial.print(gyro.accel[0]);
+        Serial.print(F("Accel_Y:"));
+        Serial.print(gyro.accel[1]);
+        Serial.print(F("Accel_Z:"));
+        Serial.print(gyro.accel[2]);
+        
+
+
+        Serial.print(F("\tAltitude:"));
+        Serial.print(altitude.current_altitude);
+
+        Serial.print(F("\tTemperature:"));
+        Serial.println(altitude.temperature);
+
+        // //***************************************************************************************
+        // // Plotter stuff
+        // //***************************************************************************************
+        // //Serial.print(F("Pitch:"));
+        // Serial.print((int16_t)(gyro.ypr[_CONF.PITCH_AXIS])); Serial.print(",");
+        // //Serial.print(F("\tYaw:"));
+        // Serial.print((int16_t)(gyro.ypr[_CONF.YAW_AXIS])); Serial.print(",");
+        // //Serial.print(F("\tRoll:"));
+        // Serial.print((int16_t)(gyro.ypr[_CONF.ROLL_AXIS] )); Serial.print(",");
+        // //Serial.print(F("\tAltitude:"));
+        // Serial.print(altitude.current_altitude); Serial.print(",");
+        // //Serial.print(F("\tTemperature:"));
+        // Serial.println(altitude.temperature); 
+        // //***************************************************************************************
+
+        // /* Voltage mesurement */
+        // float temp;
+        // voltage = (float)analogRead(A3);// / 4096 * 38.846;
+        // // Serial.println(voltage);
+        // voltage = (float)(voltage / 4096 * 40.125);
+        // temp = (int8_t)(voltage * 10 + .5);
+        // Serial.println((float)(temp/10));
+
+        Serial.print(F("\Voltage:"));
+        Serial.println(voltage);
+        
+
+
+} 
+
+
+void debugParachute() {
+
+    // // Disable the test if the REMOVE_BEFORE_FLY jumper is not present 
+    // if (IS_READY_TO_FLY == LOW)
+    //     return;
+
+    // int16_t countdown = 10;
+    // // Serial.println("Debug mode. Press any key to deploy parachute....................");
+    // // while(Serial.available() == 0) { }  // There really is nothing between the {} braces
+    // // char x = Serial.read();
+
+    // while(countdown >=0) {
+    //     delay(1000);
+    //     buzz(PIEZO_BUZZER, 2637, 1000/12);
+    //     countdown--;
+    // }
+
+    // buzz(PIEZO_BUZZER, 2637, 1000/12);
+    // buzz(PIEZO_BUZZER, 2637, 1000/12);
+    // buzz(PIEZO_BUZZER, 2637, 1000/12);
+    // buzz(PIEZO_BUZZER, 2637, 1000/12);
+    // buzz(PIEZO_BUZZER, 2637, 10000/12);
+    // deployParachute();
+    // is_abort = true;
+    // is_parachute_deployed = true;
+    // return;
 }
