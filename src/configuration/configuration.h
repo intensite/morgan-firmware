@@ -83,6 +83,10 @@ public:
 
    // TEST RELATED CONSTANTS
    uint8_t PYRO_CHANNELS_TEST;    // Bit field       8,4,2,1   1=1, 2=2, 3=4, 4=8  1&2=3, etc..
+
+   int16_t VERSION;
+   uint8_t ARMED_STATUS; 
+
    
    //Static member function that returns the instance of the singleton by reference.
    static Configuration& instance(); 

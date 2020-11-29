@@ -13,6 +13,7 @@ static Configuration& instance();
  */
 Configuration::Configuration() {
     // initialize the properties with some default values
+    this->ARMED_STATUS = 0;
     this->DEBUG = 1;
     this->BUZZER_ENABLE = 0;
     this->MEMORY_CARD_ENABLED = 1;
@@ -88,7 +89,7 @@ Configuration::Configuration() {
     this->X_GYRO_OFFSETS = 120;
     this->Y_GYRO_OFFSETS = -14;
     this->Z_GYRO_OFFSETS = -19;
-    
+        
 }
 
 Configuration& Configuration::instance() {
@@ -209,6 +210,8 @@ bool Configuration::readConfig() {
     // this->X_ACCEL_OFFSETS = doc["X_ACCEL_OFFSETS"];
     // this->Y_ACCEL_OFFSETS = doc["Y_ACCEL_OFFSETS"];
     // this->Z_ACCEL_OFFSETS = doc["Z_ACCEL_OFFSETS"];
+    
+    this->VERSION = doc["VERSION"];
      
     configFile.close();
 

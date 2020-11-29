@@ -188,11 +188,13 @@ void CliCommand::processGetCommand(const char* setting) {
         Serial.print("_CONF.X_ACCEL_OFFSETS: "); Serial.println(_CONF.X_ACCEL_OFFSETS);    
         Serial.print("_CONF.Y_ACCEL_OFFSETS: "); Serial.println(_CONF.Y_ACCEL_OFFSETS);    
         Serial.print("_CONF.Z_ACCEL_OFFSETS: "); Serial.println(_CONF.Z_ACCEL_OFFSETS);    
+        Serial.print("_CONF.VERSION: "); Serial.println(_CONF.VERSION);    
     }
 }
 
 void CliCommand::processSetCommand(const char* setting, const char* value) {
     uint8_t DO_NOT_SAVE_FLAG = false;       // To save  the SPIFFS memory freom unnecessary write access
+    
     // ----------------- PREFS PAGE -----------------------------------
     if(strcmp(setting, "BUZZER") == 0) {
         _CONF.BUZZER_ENABLE = atoi(value); 
@@ -218,6 +220,13 @@ void CliCommand::processSetCommand(const char* setting, const char* value) {
         _CONF.SCAN_TIME_INTERVAL = atoi(value); 
         Serial.print("_CONF.SCAN_TIME_INTERVAL: "); Serial.println(_CONF.SCAN_TIME_INTERVAL);    
     } 
+    // ----------------- DIAGS PAGE -----------------------------------
+    else if(strcmp(setting, "ARMED_STATUS") == 0) {
+        DO_NOT_SAVE_FLAG = true;
+        _CONF.ARMED_STATUS = atoi(value); 
+        Serial.print("_CONF.ARMED_STATUS: "); Serial.println(_CONF.ARMED_STATUS);    
+    } 
+
     // ----------------- PYRO PAGE -----------------------------------
     else if(strcmp(setting, "PYRO_ACTIVATION_DELAY") == 0) {
         _CONF.PYRO_ACTIVATION_DELAY = atoi(value); 
