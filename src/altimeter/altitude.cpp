@@ -51,7 +51,8 @@ int16_t Altitude::setupAlti() {
     myPressure.setStandbyTime(0);
     myPressure.setPressureOverSample(1);
     myPressure.setTempOverSample(1);
-    myPressure.setReferencePressure(100000); // Local Atmospheric Pressure  ex: 99,9Kpa
+    // myPressure.setReferencePressure(100000); // Local Atmospheric Pressure  ex: 99,9Kpa
+    myPressure.setReferencePressure(99700); // Local Atmospheric Pressure  ex: 99,9Kpa
 
     delay(1000);
     // initialize device
@@ -64,7 +65,7 @@ int16_t Altitude::setupAlti() {
         temperature = myPressure.readTempC();
         altitude_offset = myPressure.readFloatAltitudeMeters(); 
         Serial.print(F("Temperature=")); Serial.print(myPressure.readTempC(), 2);
-        Serial.print(F(" Offset=")); Serial.println(altitude_offset);
+        Serial.print(F("  Altitude Offset=")); Serial.println(altitude_offset);
         delay(500);
     }
     Serial.print(F("Altitude Offset = ")); Serial.println(altitude_offset); 
@@ -113,10 +114,81 @@ bool Altitude::detectApogee() {
             // Here we should be going down.
             Serial.print(F("Apogee passed. Max altitude: "));
             Serial.println(altitude_max);
-            is_parachute_deployed = deployParachute();  //@TODO: This call should probably be moved out of this class
+            // is_parachute_deployed = deployParachute();  //@TODO: This call should probably be moved out of this class
             return true;
         }
     }
 
     return false;
+}
+
+
+bool Altitude::detectChuteAltitude() {
+    byte result = 0;
+
+    if(altitude_max > _CONF.APOGEE_DIFF_METERS) {   // Prevent on the ground and transport accident
+        if(detectApogee()) {                        // Make sure we have reached apogee
+            // Check each pyro
+            for(uint8_t i=1; i<4; i++){
+                if(piroAltCheck(i)){                // Check each Pyro conditions
+                    activatePyro(i);                // If it matches Fire the corresponding Pyro Chanel
+                    result++;
+                }
+            }
+        }
+    }
+    return (result > 0);                            // Return true if one of the pyro was fired
+}
+
+bool Altitude::piroAltCheck(byte channel) {
+    //@TODO Find a better way to check for all PIRO fire altitudes
+
+    // PYRO_XX_FIRE_ALTITUDE: 0= Innactive, -1= Apogee, xx=Altitude in metters
+    switch (channel ) {
+        case 1:
+            if (_CONF.PYRO_1_FIRE_ALTITUDE != 0) {
+                if(_CONF.PYRO_1_FIRE_ALTITUDE == -1)
+                    // return detectApogee();
+                    return true;
+                else
+                    return (current_altitude <=  _CONF.PYRO_1_FIRE_ALTITUDE);
+            }
+            break;
+        case 2:
+            if (_CONF.PYRO_2_FIRE_ALTITUDE != 0) {
+                if(_CONF.PYRO_2_FIRE_ALTITUDE == -1)
+                    // return detectApogee();
+                    return true;
+                else
+                    return (current_altitude <=  _CONF.PYRO_2_FIRE_ALTITUDE);
+            }
+            break;
+        case 3:
+            if (_CONF.PYRO_3_FIRE_ALTITUDE != 0) {
+                if(_CONF.PYRO_3_FIRE_ALTITUDE == -1)
+                    // return detectApogee();
+                    return true;
+                else
+                    return (current_altitude <=  _CONF.PYRO_3_FIRE_ALTITUDE);
+            }
+            break;
+        case 4:
+            if (_CONF.PYRO_4_FIRE_ALTITUDE != 0) {
+                if(_CONF.PYRO_4_FIRE_ALTITUDE == -1)
+                    // return detectApogee();
+                    return true;
+                else
+                    return (current_altitude <=  _CONF.PYRO_4_FIRE_ALTITUDE);
+            }
+            break;
+    }
+    return false;
+}
+
+bool Altitude::detectTouchDown() {
+
+    if(current_altitude <= 5)
+        return true;
+    else 
+        return false;
 }

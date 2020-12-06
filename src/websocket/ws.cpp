@@ -6,6 +6,7 @@
 #include "./ws.h"
 #include "../lib/PString.h"
 #include "../lib/Streaming.h"
+#include "CREDENTIALS"
 
 
 // Constants
@@ -74,29 +75,31 @@ void onWebSocketEvent(uint8_t client_num,
 
 void setupWebSocket(CliCommand& cliPtr) {
 
-//************BUILT-IN AP SECTION ********************************************
-    // Start access point
-    WiFi.softAP(ssid, password);
+    if(USE_BUILT_IN_AP) {
+        //************BUILT-IN AP SECTION ********************************************
+          // Start access point
+          WiFi.softAP(ssid, password);
 
-    ////Print our IP address
-    Serial.println();
-    Serial.println("AP running");
-    Serial.print("My IP address: ");
-    Serial.println(WiFi.softAPIP());
+          ////Print our IP address
+          Serial.println();
+          Serial.println("AP running");
+          Serial.print("My IP address: ");
+          Serial.println(WiFi.softAPIP());
+    } else {
+        //************EXISTING AP SECTION ********************************************
+          WiFi.begin(SSID, PASSWORD);
+          
+          while (WiFi.status() != WL_CONNECTED) 
+          {
+              Serial.print(".");
+          }
 
-//************EXISTING AP SECTION ********************************************
-    // WiFi.begin("XX-Net2", "change password");
-
-    // while (WiFi.status() != WL_CONNECTED) 
-    // {
-    //     Serial.print(".");
-    // }
-
-    // Serial.println();
-    // Serial.println("WiFi connected!");
-    // Serial.print("IP address: ");
-    // Serial.println(WiFi.localIP());
-//************EXISTING AP SECTION ********************************************
+          Serial.println();
+          Serial.println("WiFi connected!");
+          Serial.print("IP address: ");
+          Serial.println(WiFi.localIP());
+        //************EXISTING AP SECTION ********************************************
+    }
 
     // Start WebSocket server and assign callback
     webSocket.begin();
@@ -132,7 +135,7 @@ void updateDiagnostics(float ypr[3], float& ac_x, float& ac_y, float& ac_z, floa
                 ac_x, ac_y, ac_z,
                 alti, temp, pressure, humidity, voltage, current_state);
 
-        Serial.println(str); //  DEBUG ONLY
+        // Serial.println(str); //  DEBUG ONLY
 
         /* Set the value */
         // diagCharacteristic.setValue(std::string (str));  // This is a value of a single byte

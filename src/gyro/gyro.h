@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <MPU6050.h>
 #include "../configuration/configuration.h"
+#include "../lib/SimpleKalmanFilter.h"
 
 
 class Gyro {
@@ -35,8 +36,19 @@ class Gyro {
         uint32_t lastUpdate = 0, firstUpdate = 0;         // used to calculate integration interval
         uint32_t Now = 0;                                 // used to calculate integration interval
 
+        float prevgyrodeg[3];   // Stores the PREVIOUS gyro value in degrees per seconds
+        float trustFactor = 0.15;      // Used for the Low Pass Filter
+        SimpleKalmanFilter kf_gX;
+        SimpleKalmanFilter kf_gY;
+        SimpleKalmanFilter kf_gZ;
+        // SimpleKalmanFilter kf_gX(1, 1, 0.3);
+        // SimpleKalmanFilter kf_gY(1, 1, 0.3);
+        // SimpleKalmanFilter kf_gZ(1, 1, 0.3);
+
+        
         void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz);  
         void Update_YPR_Data();
+        float filtered(float prevData, float ufData);
     
     public:
         float ypr[3];           // [yaw, pitch, roll]
@@ -48,8 +60,9 @@ class Gyro {
 
 };
 
-Gyro::Gyro() {
+Gyro::Gyro() : kf_gX(0.25, 0.25, 0.001), kf_gY(1, 1, 0.3), kf_gZ(1, 1, 0.3) {
     // devStatus = -1;
+
 };
 
 
@@ -145,6 +158,12 @@ void Gyro::ProcessGyroData() {
     // zeta = 0.015; // increase gyro bias drift gain after stabilized
     // }
 
+    // gy = filtered(prevgyrodeg[0], gx);
+
+    // gx = kf_gX.updateEstimate(gx);
+    // gy = kf_gY.updateEstimate(gy);
+    // gz = kf_gZ.updateEstimate(gz);
+
     // Pass gyro rate as rad/s
     MadgwickQuaternionUpdate(ax, ay, az, gx * PI / 180.0f, gy * PI / 180.0f, gz * PI / 180.0f);
 
@@ -154,6 +173,7 @@ void Gyro::ProcessGyroData() {
     Update_YPR_Data();
 
 }
+
 
 
 void Gyro::Update_YPR_Data() {
@@ -205,15 +225,15 @@ void Gyro::Update_YPR_Data() {
             // Serial.println(q[3]);
 
             // Print Acceleration
-            Serial.println(" x\t  y\t  z  ");
+            // Serial.println(" x\t  y\t  z  ");
             // Serial.print((int)(1000 * ax)); Serial.print('\t');
             // Serial.print((int)(1000 * ay)); Serial.print('\t');
             // Serial.print((int)(1000 * az));
             // Serial.println(" mg");
-            Serial.print(ax); Serial.print('\t');
-            Serial.print(ay); Serial.print('\t');
-            Serial.print(az);
-            Serial.println(" g");
+            // Serial.print(ax); Serial.print('\t');
+            // Serial.print(ay); Serial.print('\t');
+            // Serial.print(az);
+            // Serial.println(" g");
 
             // Print Raw rotation (Gyro)
             // Serial.print((int)(gx)); Serial.print('\t');
@@ -330,4 +350,12 @@ void Gyro::MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, floa
     q[1] = q2 * norm;
     q[2] = q3 * norm;
     q[3] = q4 * norm;
+}
+
+float Gyro::filtered(float prevData, float ufData) {
+
+    float fData = prevData * (1 - trustFactor) + ufData*trustFactor;
+    prevData = fData;
+    return fData;
+
 }

@@ -23,4 +23,7 @@ class Altitude {
         float processAltiData();
         Altitude();
         bool detectApogee();
+        bool piroAltCheck(byte channel) ;
+        bool detectChuteAltitude();
+        bool detectTouchDown();
 };

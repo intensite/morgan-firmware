@@ -19,6 +19,7 @@ void ota_handle( void * parameter ) {
 #endif
 
 void setupOTA(const char* nameprefix, const char* ssid, const char* password) {
+  uint8_t connet_attempts = 0;
   // Configure the hostname
   uint16_t maxlen = strlen(nameprefix) + 7;
   char *fullhostname = new char[maxlen];
@@ -34,9 +35,15 @@ void setupOTA(const char* nameprefix, const char* ssid, const char* password) {
 
   // Wait for connection
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.println("Connection Failed! Rebooting...");
-    delay(5000);
-    ESP.restart();
+    // Try 5 time to connect
+    if(connet_attempts < 4){
+      Serial.println("Connection Failed! Rebooting...");
+      delay(5000);
+      connet_attempts++;
+      ESP.restart();
+    } else {
+        break; //exit here and don't get additional input
+    }
   }
 
   // Port defaults to 3232

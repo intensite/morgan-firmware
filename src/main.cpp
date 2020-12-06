@@ -1,8 +1,12 @@
+#define ESP32_RTOS  // Uncomment this line if you want to use the code with freertos only on the ESP32
+                    // Has to be done before including "OTA.h"
+
+#include "./ota/OTA.h"
+// #include <credentials.h>
 
 #include <Arduino.h>
 #include "./config.h"
 #include "./global.h"
-// #include "./gyro/Cgyro.h"
 #include "./gyro/gyro.h"
 #include "./altimeter/altitude.h"
 #include "./servo/fins_servo.h"
@@ -21,9 +25,12 @@
 #include "./command/command.h"
 #include "./lib/TaskScheduler.h"
 
+#include "./lib/TaskScheduler.h"
+#include "CREDENTIALS"
+
 // Configuration& conf = _CONF; //Configuration::instance();
 
-enum State_enum {LAUNCHPAD, THRUST_ST1, THRUST_ST2, COASTING, DESCENT, CHUTE_DESCENT, LANDED };
+enum State_enum {LAUNCHPAD, ARMED, THRUST_ST1, COASTING_INTER, THRUST_ST2, COASTING, DESCENT, CHUTE_DESCENT, LANDED };
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 bool is_abort = false;
 bool is_parachute_deployed = false;
@@ -36,6 +43,7 @@ int16_t g_servo_roll = 0;
 unsigned long previousMillis = 0;
 unsigned long previousHBeatMillis = 0;
 unsigned long previousLaunchMillis = 0;   // Used for launch detection
+unsigned long previousBurnoutMillis = 0;   // Used for burnout detection
 
 bool setup_error = false;
 State_enum currentState;
@@ -57,13 +65,20 @@ void measureVoltage_cb();
 void abort_flight();
 bool detectLiftoff();
 void state_LAUNCHPAD();
+void state_ARMED();
 void state_THRUST_ST1();
+void state_COASTING_INTER();
+void state_THRUST_ST2();
+void state_COASTING();
+void state_DESCENT();
+void state_CHUTE_DESCENT();
+void state_LANDED();
 void displaySensorData();
 
 // ================================================================
 // Tasks definition
 // ================================================================
-Task tflashLED ( 1 * TASK_SECOND, -1, &flashLEDcb, &ts, true );
+Task tflashLED ( 2 * TASK_SECOND, -1, &flashLEDcb, &ts, true );
 Task tbeepSequence ( 2 * TASK_SECOND, -1, &beepSequencecb, &ts, true );
 Task tMeasureVoltage ( 10 * TASK_SECOND, -1, &measureVoltage_cb, &ts, true );
 Task tupdateBLEdiags ( 200 * TASK_MILLISECOND, -1, &updateBLEdiags_cb, &ts, true );     // BLE Diagnostics (fast refresh)
@@ -114,7 +129,6 @@ void testSequence() {
 
 int8_t persistData() {
 
-    // if(_CONF.MEMORY_CARD_ENABLED == 0 || IS_READY_TO_FLY == LOW) {
     if(_CONF.MEMORY_CARD_ENABLED == 0 ) {
         return 0;
     }
@@ -126,7 +140,6 @@ int8_t persistData() {
     }
 
     lr::LogRecord logRecord(
-    // LogRecord logRecord(
         millis(), 
         currentState,
         altitude.current_altitude, 
@@ -157,6 +170,14 @@ int8_t persistData() {
 // ================================================================
 void setup() {
 
+
+    // initialize serial communication
+    Serial.begin(115200);
+    Serial.println("Booting");
+
+    if(USE_OTA_UPDATE)
+        setupOTA("TemplateSketch", SSID, PASSWORD);
+
     is_abort = false;
     is_parachute_deployed = false;
     g_servo_pitch = 0;
@@ -165,8 +186,7 @@ void setup() {
 
     // WiFi.mode(WIFI_OFF);
 
-    // initialize serial communication
-    Serial.begin(115200);       // Reduced the speed as it was crashing the arduino at 115200
+
     delay(500);                 // waits for the serial to settle
 
     _CONF.readConfig();         // Read the config from SPIFFS Memory
@@ -264,7 +284,7 @@ void loop() {
     }
     
     // Some data from the Gyroscope is ready to be processed
-    // This need to be done for all states so it is done first and outside ot the state evaluation
+    // This and altitude data need to be done for all states so it is done first and outside ot the state evaluation
     if(mpuInterrupt) {
         portENTER_CRITICAL(&mux);       
         mpuInterrupt = false;
@@ -273,26 +293,39 @@ void loop() {
         gyro.ProcessGyroData();
     }
 
+    // Read the altitude
+    altitude.processAltiData();
+
     // Used to slowdown the process to the number of milliseconds defined in variable interval (see config.h file)
     if (currentMillis - previousMillis >= _CONF.SCAN_TIME_INTERVAL) {
         previousMillis = currentMillis; 
 
-        //enum State_enum {LAUNCHPAD, THRUST_ST1, THRUST_ST2, COASTING, DESCENT, CHUTE_DESCENT, LANDED };
+        //enum State_enum {LAUNCHPAD, ARMED, THRUST_ST1, THRUST_ST2, COASTING, DESCENT, CHUTE_DESCENT, LANDED };
         switch(currentState) {
             case LAUNCHPAD:
                 state_LAUNCHPAD();
                 break;
+            case ARMED:
+                state_ARMED();
+                break;
             case THRUST_ST1:
                 state_THRUST_ST1();
+            case COASTING_INTER:
+                state_COASTING_INTER();
             case THRUST_ST2:
+                state_THRUST_ST2();
                 break;
             case COASTING:
+                state_COASTING();
                 break;
             case DESCENT:
+                state_DESCENT();
                 break;
             case CHUTE_DESCENT:
+                state_CHUTE_DESCENT();
                 break;
             case LANDED:
+                state_LANDED();
                 break;
         }
 
@@ -317,6 +350,7 @@ void loop() {
 /****************************************************************************************************************************
  *                                      TASK CALLBACKs
  *  Used by the task scheduler define at the top of the file
+ *  The original function was blinking pulsating the led.  This function should be pin to the second core.
  ****************************************************************************************************************************/
 void flashLEDcb() {
 
@@ -329,24 +363,24 @@ void flashLEDcb() {
         ledStatus = LOW;
         if(!_CONF.MEMORY_CARD_ENABLED) {  
             // If the Memory card is not recording, flash blue
-            led_color(LED_COLOR_BLUE);
-            delay(50);
-            led_color(LED_COLOR_OFF);
-            delay(100);
-            led_color(LED_COLOR_BLUE);
-            delay(50);
-            led_color(LED_COLOR_OFF);
-            delay(100);
+            // led_color(LED_COLOR_BLUE);
+            // delay(50);
+            // led_color(LED_COLOR_OFF);
+            // delay(100);
+            // led_color(LED_COLOR_BLUE);
+            // delay(50);
+            // led_color(LED_COLOR_OFF);
+            // delay(100);
             led_color(LED_COLOR_BLUE);
         }else {
-            led_color(LED_COLOR_GREEN);
-            delay(50);
-            led_color(LED_COLOR_OFF);
-            delay(100);
-            led_color(LED_COLOR_GREEN);
-            delay(50);
-            led_color(LED_COLOR_OFF);
-            delay(100);
+            // led_color(LED_COLOR_GREEN);
+            // delay(50);
+            // led_color(LED_COLOR_OFF);
+            // delay(100);
+            // led_color(LED_COLOR_GREEN);
+            // delay(50);
+            // led_color(LED_COLOR_OFF);
+            // delay(100);
             led_color(LED_COLOR_GREEN);
         }
     }
@@ -404,7 +438,7 @@ bool detectLiftoff() {
      * return true, else return false
      */
 
-    if(gyro.z_gforce >= 1.5 ) {
+    if(abs(gyro.z_gforce) >= 1.5 ) {
         if (previousLaunchMillis == 0) {
             previousLaunchMillis = millis();
         }
@@ -418,6 +452,33 @@ bool detectLiftoff() {
         previousLaunchMillis = 0;
         return false;
     }
+}
+
+bool detectBurnout() {
+    /** 
+     * Used durring powered flight stages to detect when engins burnout
+     * Using the accelerometer, if the accelleration on the Z axis is >= than Threshold (Use a constant here)
+     * for more than 0.1 Second (Use another contant here)
+     * return true, else return false
+     */
+    
+    // IF Accel Z <= 0.2M/s2 for more than 0.1 Sec   ===> MECO
+
+    if((abs(gyro.z_gforce) * 9.80665) - 9.80665 <= 0.2 ) {
+        if (previousBurnoutMillis == 0) {
+            previousBurnoutMillis = millis();
+        }
+
+        if((millis() - previousBurnoutMillis) >= 100) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        previousBurnoutMillis = 0;
+        return false;
+    }
+
 }
 
 void abort_flight() {
@@ -442,9 +503,10 @@ bool detectTouchDown() {
  ****************************************************************************************************************************/
 void state_LAUNCHPAD() {
 
-    tflashLED.disable();  // DEBUG
+    // Disable beeps until ARMED and keep LED
+    tbeepSequence.disable();
 
-    // Memory format  (Should maybe be moved to a pre-flight stage)
+    // Memory format 
     if(_CONF.FORMAT_MEMORY) {
         _CONF.FORMAT_MEMORY = 0;
         _CONF.MEMORY_CARD_ENABLED = 0;
@@ -458,15 +520,44 @@ void state_LAUNCHPAD() {
     if (_CONF.DATA_RECOVERY_MODE) {
         _CONF.DATA_RECOVERY_MODE = 0;
         readDataToSerial();
-        // readDataToBLE();
+        // readDataToBLE();  //@TODO: Change for Wifi transmission of flight data
     }
 
     // Handle communication with outside world
     processWebSocket();
     cli.handleSerial();
 
-    // Read the altitude
-    altitude.processAltiData();
+    //@TODO:  Detect ARMING SIGNAL!
+    // From mission control
+    if(_CONF.ARMED_STATUS == 1) {
+        // Chage state to ARMED
+        Serial.println("Rocket is now ARMED!");
+        tbeepSequence.enable();  // Enable the beep signal since we are armed
+        currentState = ARMED;
+    }
+
+    //DEBUG ONLY REMOVE BEFORE FLIGHT
+    //processTrajectory(gyro.ypr); //DEBUG ONLY REMOVE BEFORE FLIGHT
+
+}
+
+void state_ARMED() {
+
+    // Handle communication with outside world
+    processWebSocket();
+    cli.handleSerial();
+
+    // From mission control, process disarming signal
+    if(_CONF.ARMED_STATUS == 0) {
+        // Chage state to DISARMED
+        Serial.println("Rocket is now DISARMED!");
+        currentState = LAUNCHPAD;
+    }
+
+    //@TODO:  Perform last calibration before launch here
+    // Only once!
+
+    
 
     if (detectLiftoff()) {
         Serial.println("Lift-off detected");
@@ -474,27 +565,100 @@ void state_LAUNCHPAD() {
         // Disable un-necessary tasks
         tflashLED.disable();
         tbeepSequence.disable();
-        tupdateBLEdiags.disable();
-        tupdateBLEparams.disable();
-        tupdateBLEGuidanceConfig.disable();
+        // tupdateBLEdiags.disable();
+        // tupdateBLEparams.disable();
+        // tupdateBLEGuidanceConfig.disable();
 
         // Chage state to Powered Flight
         currentState = THRUST_ST1;
-    }   
+    }  
+
 }
+
 
 void state_THRUST_ST1() {
 
-    // Read the altitude and process trajectory with the servos
-    altitude.processAltiData();
+    // debug only, disable in flight condition
+    // Handle communication with outside world 
+    if (_CONF.DEBUG) {
+        processWebSocket();
+        cli.handleSerial();
+    }
+
+    // Process trajectory with the servos
     processTrajectory(gyro.ypr);
+
+    if (detectBurnout()) {
+        // Chage state to Coasting Inter Stage
+        currentState = COASTING;
+    }
     
+    //  Check for apogee even during the first power stage
     if(altitude.detectApogee()) {
-        // Chage state to Powered Flight
+        // Chage state to Descent
         currentState = DESCENT;
     }
 }
 
+void state_COASTING_INTER() { 
+
+    if (detectLiftoff()) {
+            // Detect the thrust of the second stage
+            Serial.println("Acceleration detected");
+            currentState = THRUST_ST2;
+    }
+
+    if(altitude.detectApogee()) {
+        // Chage state to Descent
+        currentState = DESCENT;
+    }
+}
+
+void state_THRUST_ST2() {
+    
+    // Process trajectory with the servos
+    processTrajectory(gyro.ypr);
+
+    if (detectBurnout()) {
+        // Chage state to final Coasting
+        currentState = COASTING;
+    }
+    
+    //  Check for apogee even during the second power stage
+    if(altitude.detectApogee()) {
+        // Chage state to Descent
+        currentState = DESCENT;
+    }
+}
+
+void state_COASTING() { 
+    // Final Coasting stage before apogee
+
+    if(altitude.detectApogee()) {
+        // Chage state to uncontroled descent
+        currentState = DESCENT;
+    }
+}
+
+void state_DESCENT() { 
+    //Detect Parachute Altitude
+    if(altitude.detectChuteAltitude()) {
+        // Chage state to PARACHUTE CONTROLED DESCENT
+        currentState = CHUTE_DESCENT;
+    }
+}
+
+void state_CHUTE_DESCENT() { 
+    if(altitude.detectTouchDown()) {
+        // Chage state to LANDED
+        currentState = LANDED;
+    }
+
+}
+void state_LANDED() { 
+
+
+}
 
 /*****************************************************************
  *  Used to display sensor data onthe cosole. Mainly to debug.
@@ -510,34 +674,37 @@ void displaySensorData() {
         // Serial.print(F("\tRoll:"));
         // Serial.print((int16_t)(gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI));
         
-        Serial.print(F("Accel_X:"));
-        Serial.print(gyro.accel[0]);
-        Serial.print(F("Accel_Y:"));
-        Serial.print(gyro.accel[1]);
-        Serial.print(F("Accel_Z:"));
-        Serial.print(gyro.accel[2]);
+        // Serial.print(F("Accel_X:"));
+        // Serial.print(gyro.accel[0]);
+        // Serial.print(F("Accel_Y:"));
+        // Serial.print(gyro.accel[1]);
+        // Serial.print(F("Accel_Z:"));
+        // Serial.print(gyro.accel[2]);
         
 
 
-        Serial.print(F("\tAltitude:"));
-        Serial.print(altitude.current_altitude);
+        // Serial.print(F("\tAltitude:"));
+        // Serial.print(altitude.current_altitude);
 
-        Serial.print(F("\tTemperature:"));
-        Serial.println(altitude.temperature);
+        // Serial.print(F("\tTemperature:"));
+        // Serial.println(altitude.temperature);
+
+        // Serial.print(F("\tServo Yaw & Pitch: "));Serial.print(g_servo_yaw);Serial.print(", ");Serial.println(g_servo_pitch);
 
         // //***************************************************************************************
         // // Plotter stuff
         // //***************************************************************************************
-        // //Serial.print(F("Pitch:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.PITCH_AXIS])); Serial.print(",");
-        // //Serial.print(F("\tYaw:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.YAW_AXIS])); Serial.print(",");
-        // //Serial.print(F("\tRoll:"));
-        // Serial.print((int16_t)(gyro.ypr[_CONF.ROLL_AXIS] )); Serial.print(",");
-        // //Serial.print(F("\tAltitude:"));
-        // Serial.print(altitude.current_altitude); Serial.print(",");
-        // //Serial.print(F("\tTemperature:"));
-        // Serial.println(altitude.temperature); 
+        //Serial.print(F("Pitch:"));
+        Serial.print((int16_t)(gyro.ypr[_CONF.PITCH_AXIS])); Serial.print(",");
+        //Serial.print(F("\tYaw:"));
+        Serial.print((int16_t)(gyro.ypr[_CONF.YAW_AXIS])); Serial.print(",");
+        //Serial.print(F("\tRoll:"));
+        Serial.print((int16_t)(gyro.ypr[_CONF.ROLL_AXIS] )); Serial.print(",");
+        //Serial.print(F("\tAltitude:"));
+        Serial.print(altitude.current_altitude); Serial.print(",");
+        Serial.print(gyro.z_gforce); Serial.print(",");
+        //Serial.print(F("\tTemperature:"));
+        Serial.println(altitude.temperature); 
         // //***************************************************************************************
 
         // /* Voltage mesurement */
@@ -548,10 +715,8 @@ void displaySensorData() {
         // temp = (int8_t)(voltage * 10 + .5);
         // Serial.println((float)(temp/10));
 
-        Serial.print(F("\Voltage:"));
-        Serial.println(voltage);
-        
-
+        // Serial.print(F("\Voltage:"));
+        // Serial.println(voltage);
 
 } 
 

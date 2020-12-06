@@ -1,0 +1,27 @@
+- (FAIT) Faire la transition entre l'etat LAUNCH_PAD ==> ARMED / ARMED ==> LAUNCH_PAD
+- Faire une interface sur mission control (web) pour passer d'un etat a l'autre
+    - Specialement pour ARMED (ON/OFF)
+- Faire une fonction de calibration pour les sensors sur demande (du mission control)
+
+- (FAIT) Expérimenter et mettre en place la fonction OTA (Over The Air) firmware update
+- Afficher version du code sur le mission control 
+
+
+Dans une nouvelle branche
+=============================
+- GPS
+    - Enregistrement coordonnées GPS pendant e vol
+- Radio communication
+    - Emission a l'aterissage des coordonné GPS pour le recouvrement
+
+- Mettre en place meilleur PID avec modelisation
+
+- Roll Control (Reaction Wheel)
+
+Autres idees
+=============================
+- Launchpad automatisé
+    - Avec countdown
+    - Allumage du premier stage
+
+

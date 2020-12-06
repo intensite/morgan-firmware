@@ -20,7 +20,7 @@
 // Task tPyroChannel_4_Off (PYROTIME*TASK_SECOND, TASK_ONCE, &ts, &PyroChannel_4_Off_cb);
 
 
-bool deployParachute(void) {
+bool deployParachute() {
 
 
     //TODO: Change parachute deployment logic to use one of the 4 customizable pyro channel 
