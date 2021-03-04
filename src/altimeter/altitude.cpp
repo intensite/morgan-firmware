@@ -46,10 +46,10 @@ int16_t Altitude::setupAlti() {
     altitude_max = 0; previous_altitude = 0; is_apogee = false;
 
     //Configure the sensor
-    myPressure.setFilter(0);
+    myPressure.setFilter(2);
     myPressure.setMode(3); //Normal mode
     myPressure.setStandbyTime(0);
-    myPressure.setPressureOverSample(1);
+    myPressure.setPressureOverSample(2);
     myPressure.setTempOverSample(1);
     // myPressure.setReferencePressure(99700); // Local Atmospheric Pressure  ex: 99,9Kpa
     myPressure.setReferencePressure(_CONF.LOCAL_KPA*1000); // Local Atmospheric Pressure  ex: 99,9Kpa  99700
@@ -62,7 +62,7 @@ int16_t Altitude::setupAlti() {
     Serial.println(F("Stabilisation current altitude...."));
 
     for(int8_t i=0; i<10; i++) {
-        myPressure.readFloatPressure();
+        // myPressure.readFloatPressure();
         pressure += myPressure.readFloatPressure();
     }
 
@@ -209,6 +209,7 @@ bool Altitude::detectTouchDown() {
 float Altitude::readFloatAltitudeMeters( )
 {
 	float heightOutput = 0;
+	// myPressure.readFloatPressure();
 	float _pressure = myPressure.readFloatPressure() + pressure_offset;
     // const float see_level = 101.325 * 1000;
     const float see_level = _CONF.LOCAL_KPA * 1000;
