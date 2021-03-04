@@ -15,7 +15,8 @@ void onWebSocketEvent(uint8_t client_num,
 
 
 // void updateDiagnostics(float ypr[3], int16_t ac_x, int16_t ac_y, int16_t ac_z);
-void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z, float& alti, float& temp, float& pressure, float& humidity, float& voltage);
+// void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z, float& alti, float& temp, float& pressure, float& humidity, float& voltage);
+void updateDiagnostics(float ypr[3], float& ac_x, float& ac_y, float& ac_z, float& alti, float& temp, float& pressure, float& humidity, float& voltage, byte current_state);
 void updateBLEparams();
 void updatePrefs();
 void updatePyros();

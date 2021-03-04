@@ -10,6 +10,7 @@ class Altitude {
 
     public:
         float altitude_offset=0;
+        float pressure_offset=0;
         float current_altitude;
         float previous_altitude;
         bool is_apogee;
@@ -22,4 +23,9 @@ class Altitude {
         int16_t setupAlti();
         float processAltiData();
         Altitude();
+        bool detectApogee();
+        bool piroAltCheck(byte channel) ;
+        bool detectChuteAltitude();
+        bool detectTouchDown();
+        float readFloatAltitudeMeters();
 };

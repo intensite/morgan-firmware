@@ -21,6 +21,10 @@
 // #define REMOVE_BEFORE_FLIGHT 23            // HEADER1  // HIGH IF READY TO FLY. (Pin is configured as INPUT_PULLUP ) 
 #define HEADER1 23                         // HEADER1  
 #define VOLTAGE 34                         // VOLTAGE  
+#define LAUCH_DETECTION_PIN 19             // Digital pin for LAUCH DETECTION Mechanical Switch
+
+#define DOUBLE_STAGE_CONFIG 0               // Set to 1 if the rocket has two stages, set to 0 otherwise
+#define BURNOUT_TIMER 1000
 
 
 // #define SDA 21 

@@ -151,17 +151,19 @@ void moveServoTVC(float _ypr[]) {
     pitchPID.Compute();
     yawPID.Compute();
 
-    g_servo_yaw = (Output_Yaw * _CONF.SERVO_2_ORIENTATION + 90) + _CONF.SERVO_2_OFFSET ;
-    g_servo_pitch = (Output_Pitch * _CONF.SERVO_1_ORIENTATION + 90) + _CONF.SERVO_1_OFFSET ;
+    g_servo_yaw = (Output_Yaw * _CONF.SERVO_2_ORIENTATION ) + _CONF.SERVO_2_OFFSET ;
+    g_servo_pitch = (Output_Pitch * _CONF.SERVO_1_ORIENTATION ) + _CONF.SERVO_1_OFFSET ;
+    // g_servo_yaw = (Output_Yaw * _CONF.SERVO_2_ORIENTATION + 90) + _CONF.SERVO_2_OFFSET ;
+    // g_servo_pitch = (Output_Pitch * _CONF.SERVO_1_ORIENTATION + 90) + _CONF.SERVO_1_OFFSET ;
 
     if(_CONF.DEBUG) {
-        Serial.print(millis());Serial.print(",");
-        Serial.print(Input_Pitch);Serial.print(","); Serial.print(Input_Yaw);
-        Serial.print(","); Serial.print(Output_Pitch * _CONF.SERVO_1_ORIENTATION);  // Reversed for graphing purposes
-        Serial.print(","); Serial.print(Output_Yaw * _CONF.SERVO_2_ORIENTATION);    // Reversed for graphing purposes
-        Serial.print(","); Serial.print(g_servo_pitch);
-        Serial.print(","); Serial.print(g_servo_yaw);
-        Serial.println("");
+        // Serial.print(millis());Serial.print(",");
+        // Serial.print(Input_Pitch);Serial.print(","); Serial.print(Input_Yaw);
+        // Serial.print(","); Serial.print(Output_Pitch * _CONF.SERVO_1_ORIENTATION);  // Reversed for graphing purposes
+        // Serial.print(","); Serial.print(Output_Yaw * _CONF.SERVO_2_ORIENTATION);    // Reversed for graphing purposes
+        // Serial.print(","); Serial.print(g_servo_pitch);
+        // Serial.print(","); Serial.print(g_servo_yaw);
+        // Serial.println("");
     }
 
     // Send the commands to the Servos

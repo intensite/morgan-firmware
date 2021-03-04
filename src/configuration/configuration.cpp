@@ -13,12 +13,16 @@ static Configuration& instance();
  */
 Configuration::Configuration() {
     // initialize the properties with some default values
+    this->ARMED_STATUS = 0;
+    this->MANUAL_STATE = -1;
     this->DEBUG = 1;
     this->BUZZER_ENABLE = 0;
     this->MEMORY_CARD_ENABLED = 1;
     this->DATA_RECOVERY_MODE = 0;
     this->FORMAT_MEMORY = 0;
     this->SCAN_TIME_INTERVAL = 100;
+    this->LOCAL_KPA = 101.3;
+    this->CALIBRATE = false;    // Should always be false except when requesting calibration
 
 
     // PYRO CONTROL
@@ -67,8 +71,11 @@ Configuration::Configuration() {
     this->PID_ROLL_Kd = 0.5;
 
     // IMU AXIS PHYSICAL LOCATION (ypr[3])
-    this->PITCH_AXIS = 2;
-    this->YAW_AXIS = 0;
+    // this->PITCH_AXIS = 2;
+    // this->YAW_AXIS = 0;
+    // this->ROLL_AXIS = 1;
+    this->PITCH_AXIS = 0;
+    this->YAW_AXIS = 2;
     this->ROLL_AXIS = 1;
 
     // // IMU CALIBRATION
@@ -85,7 +92,7 @@ Configuration::Configuration() {
     this->X_GYRO_OFFSETS = 120;
     this->Y_GYRO_OFFSETS = -14;
     this->Z_GYRO_OFFSETS = -19;
-    
+        
 }
 
 Configuration& Configuration::instance() {
@@ -139,6 +146,7 @@ bool Configuration::readConfig() {
     this->DATA_RECOVERY_MODE = doc["DATA_RECOVERY_MODE"]; // 1
     this->FORMAT_MEMORY = doc["FORMAT_MEMORY"]; // 0
     this->SCAN_TIME_INTERVAL = doc["SCAN_TIME_INTERVAL"]; // 100
+    this->LOCAL_KPA = doc["LOCAL_KPA"];
 
     // PYRO CONTROL
     this->APOGEE_DIFF_METERS = doc["APOGEE_DIFF_METERS"]; // 10
@@ -206,6 +214,8 @@ bool Configuration::readConfig() {
     // this->X_ACCEL_OFFSETS = doc["X_ACCEL_OFFSETS"];
     // this->Y_ACCEL_OFFSETS = doc["Y_ACCEL_OFFSETS"];
     // this->Z_ACCEL_OFFSETS = doc["Z_ACCEL_OFFSETS"];
+    
+    this->VERSION = doc["VERSION"];
      
     configFile.close();
 
@@ -229,6 +239,7 @@ int Configuration::saveConfig() {
     doc["DATA_RECOVERY_MODE"] = this->DATA_RECOVERY_MODE;
     doc["FORMAT_MEMORY"] = this->FORMAT_MEMORY;
     doc["SCAN_TIME_INTERVAL"] = this->SCAN_TIME_INTERVAL;
+    doc["LOCAL_KPA"] = this->LOCAL_KPA;
 
     // PYRO CONTROL
     doc["APOGEE_DIFF_METERS"] = this->APOGEE_DIFF_METERS;

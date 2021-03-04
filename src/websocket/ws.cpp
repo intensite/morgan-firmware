@@ -6,6 +6,7 @@
 #include "./ws.h"
 #include "../lib/PString.h"
 #include "../lib/Streaming.h"
+#include "CREDENTIALS"
 
 
 // Constants
@@ -74,29 +75,31 @@ void onWebSocketEvent(uint8_t client_num,
 
 void setupWebSocket(CliCommand& cliPtr) {
 
-//************BUILT-IN AP SECTION ********************************************
-    // Start access point
-    WiFi.softAP(ssid, password);
+    if(USE_BUILT_IN_AP) {
+        //************BUILT-IN AP SECTION ********************************************
+          // Start access point
+          WiFi.softAP(ssid, password);
 
-    ////Print our IP address
-    Serial.println();
-    Serial.println("AP running");
-    Serial.print("My IP address: ");
-    Serial.println(WiFi.softAPIP());
-
-//************EXISTING AP SECTION ********************************************
-    // WiFi.begin("XX-Net2", "change password");
-
-    // while (WiFi.status() != WL_CONNECTED) 
-    // {
-    //     Serial.print(".");
-    // }
-
-    // Serial.println();
-    // Serial.println("WiFi connected!");
-    // Serial.print("IP address: ");
-    // Serial.println(WiFi.localIP());
-//************EXISTING AP SECTION ********************************************
+          ////Print our IP address
+          Serial.println();
+          Serial.println("AP running");
+          Serial.print("My IP address: ");
+          Serial.println(WiFi.softAPIP());
+    } else {
+        //************EXISTING AP SECTION ********************************************
+          WiFi.begin(SSID, PASSWORD);
+          
+          while (WiFi.status() != WL_CONNECTED) 
+          {
+              Serial.print(".");
+          }
+          WiFi.setHostname("MORGAN");
+          Serial.println();
+          Serial.println("WiFi connected!");
+          Serial.print("IP address: ");
+          Serial.println(WiFi.localIP());
+        //************EXISTING AP SECTION ********************************************
+    }
 
     // Start WebSocket server and assign callback
     webSocket.begin();
@@ -111,7 +114,8 @@ void processWebSocket() {
   webSocket.loop();
 }
 
-void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage) {
+// void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage) {
+void updateDiagnostics(float ypr[3], float& ac_x, float& ac_y, float& ac_z, float& alti, float& temp, float& pressure, float& humidity,float& voltage, byte current_state) {
 
     if (deviceConnected) {
 
@@ -126,10 +130,12 @@ void updateDiagnostics(float ypr[3], int16_t& ac_x, int16_t& ac_y, int16_t& ac_z
         gyro[_CONF.ROLL_AXIS] = ypr[_CONF.ROLL_AXIS];
         gyro[_CONF.PITCH_AXIS] = ypr[_CONF.PITCH_AXIS];
 
-        sprintf(str, "T1|%.1f|%.1f|%.1f|%d|%d|%d|%.2f|%.2f|%.2f|%.2f|%.2f", 
+        sprintf(str, "T1|%.1f|%.1f|%.1f|%.1f|%.1f|%.1f|%.2f|%.2f|%.2f|%.2f|%.2f|%d", 
                 gyro[_CONF.YAW_AXIS], gyro[_CONF.PITCH_AXIS], gyro[_CONF.ROLL_AXIS], 
                 ac_x, ac_y, ac_z,
-                alti, temp, pressure, humidity, voltage);
+                alti, temp, pressure, humidity, voltage, current_state);
+
+        // Serial.println(str); //  DEBUG ONLY
 
         /* Set the value */
         // diagCharacteristic.setValue(std::string (str));  // This is a value of a single byte
@@ -157,7 +163,8 @@ void updatePrefs() {
 
     char param_str[50];
 
-  sprintf(param_str, "T2|%d|%d|%d|%d|%d|%d", _CONF.DEBUG, _CONF.BUZZER_ENABLE, _CONF.MEMORY_CARD_ENABLED, _CONF.DATA_RECOVERY_MODE, _CONF.FORMAT_MEMORY, _CONF.SCAN_TIME_INTERVAL);
+  sprintf(param_str, "T2|%d|%d|%d|%d|%d|%d|%f", _CONF.DEBUG, _CONF.BUZZER_ENABLE, _CONF.MEMORY_CARD_ENABLED, _CONF.DATA_RECOVERY_MODE, _CONF.FORMAT_MEMORY, 
+                                            _CONF.SCAN_TIME_INTERVAL, _CONF.LOCAL_KPA);
   webSocket.sendTXT(_client_num, param_str);
 
 }

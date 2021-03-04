@@ -36,7 +36,7 @@ namespace lr {
 
 // Default null record constructor
 LogRecord::LogRecord() 
-        : _timestamp(0), _altitude(0), _pitch(0), _roll(0), 
+        : _timestamp(0), _state(0), _altitude(0), _pitch(0), _roll(0), 
         _pitchServo(0), _rollServo(0), _parachute(0), _abort(0), 
         _temperature(0), _battery(0), _gForces(0)
 {
@@ -44,10 +44,10 @@ LogRecord::LogRecord()
 }
 
 // constructor
-LogRecord::LogRecord(unsigned long timestamp, unsigned int altitude, int pitch, int roll, 
+LogRecord::LogRecord(unsigned long timestamp, byte state, unsigned int altitude, int pitch, int roll, 
                 int pitchServo, int rollServo, bool parachute, bool abort, 
                 byte temperature, byte battery, byte gForces)
-        : _timestamp(timestamp), _altitude(altitude), _pitch(pitch), _roll(roll), 
+        : _timestamp(timestamp), _state(state), _altitude(altitude), _pitch(pitch), _roll(roll), 
         _pitchServo(pitchServo), _rollServo(rollServo), _parachute(parachute), _abort(abort), 
         _temperature(temperature), _battery(battery), _gForces(gForces)
 {
@@ -72,6 +72,8 @@ bool LogRecord::isNull() const
 void LogRecord::writeToSerial() const
 {
     Serial.print(_timestamp);
+    Serial.print(",");
+    Serial.print(_state);
     Serial.print(",");
     Serial.print(_altitude);
     Serial.print(",");
@@ -102,6 +104,7 @@ void LogRecord::writeToCSV(char** rec, size_t *rec_len)
     PString str(buffer, sizeof(buffer));
 
     str << _timestamp << ",";
+    str << _state << ",";
     str << _altitude << ",";
     str << _pitch << ",";
     str << _roll << ",";
@@ -137,6 +140,7 @@ struct InternalLogRecord
     // uint16_t crc; // The CRC-16 of the record.
 
     unsigned long timestamp;    // Milliseconds since start
+    byte state;    // Milliseconds since start
     unsigned int altitude;
     int pitch;
     int roll;
@@ -304,7 +308,7 @@ LogRecord getLogRecord(uint32_t index) {
         return LogRecord();
     }
     const InternalLogRecord record = getInternalRecord(index);
-    return LogRecord(record.timestamp, record.altitude, record.pitch, 
+    return LogRecord(record.timestamp, record.state, record.altitude, record.pitch, 
                     record.roll, record.pitchServo, record.rollServo, 
                     record.parachute, record.abort, record.temperature, record.battery, record.gForces);
 }
@@ -323,6 +327,7 @@ bool appendRecord(const LogRecord &logRecord)
     InternalLogRecord internalRecord;
     memset(&internalRecord, 0, sizeof(InternalLogRecord));
     internalRecord.timestamp = logRecord._timestamp;
+    internalRecord.state = logRecord._state;
     internalRecord.altitude = logRecord._altitude;
     internalRecord.pitch = logRecord._pitch;
     internalRecord.roll = logRecord._roll;
@@ -345,7 +350,7 @@ bool appendRecord(const LogRecord &logRecord)
  */
 bool markBeginingOfDataSet() {
 
-    LogRecord logRecord(99999, 99999, 999, 999, 
+    LogRecord logRecord(99999,9,99999, 999, 999, 
                 999, 999, false, false, 
                99, 99, 99);
 

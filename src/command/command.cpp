@@ -4,6 +4,8 @@
 #include "../buzzer/buzzer.h"
 #include "../parachute/parachute.h"
 #include "../configuration/configuration.h"
+// #include "../gyro/gyro.h"
+// #include "../altimeter/altitude.h"
 #include <SimpleCLI.h>
 
 
@@ -127,6 +129,7 @@ void CliCommand::processGetCommand(const char* setting) {
         Serial.print("_CONF.DATA_RECOVERY_MODE: "); Serial.println(_CONF.DATA_RECOVERY_MODE);    
         Serial.print("_CONF.FORMAT_MEMORY: "); Serial.println(_CONF.FORMAT_MEMORY);    
         Serial.print("_CONF.SCAN_TIME_INTERVAL: "); Serial.println(_CONF.SCAN_TIME_INTERVAL);    
+        Serial.print("_CONF.LOCAL_KPA: "); Serial.println(_CONF.LOCAL_KPA);    
 
         // PYRO CONTROL
         Serial.println("// PYRO CONTROL");
@@ -188,11 +191,17 @@ void CliCommand::processGetCommand(const char* setting) {
         Serial.print("_CONF.X_ACCEL_OFFSETS: "); Serial.println(_CONF.X_ACCEL_OFFSETS);    
         Serial.print("_CONF.Y_ACCEL_OFFSETS: "); Serial.println(_CONF.Y_ACCEL_OFFSETS);    
         Serial.print("_CONF.Z_ACCEL_OFFSETS: "); Serial.println(_CONF.Z_ACCEL_OFFSETS);    
+        Serial.print("_CONF.VERSION: "); Serial.println(_CONF.VERSION);    
     }
+    else if(strcmp(setting, "CALIBRATE") == 0) {
+        Serial.print("Calibration requested..........");
+        _CONF.CALIBRATE = true;
+    } 
 }
 
 void CliCommand::processSetCommand(const char* setting, const char* value) {
     uint8_t DO_NOT_SAVE_FLAG = false;       // To save  the SPIFFS memory freom unnecessary write access
+    
     // ----------------- PREFS PAGE -----------------------------------
     if(strcmp(setting, "BUZZER") == 0) {
         _CONF.BUZZER_ENABLE = atoi(value); 
@@ -218,6 +227,24 @@ void CliCommand::processSetCommand(const char* setting, const char* value) {
         _CONF.SCAN_TIME_INTERVAL = atoi(value); 
         Serial.print("_CONF.SCAN_TIME_INTERVAL: "); Serial.println(_CONF.SCAN_TIME_INTERVAL);    
     } 
+    else if(strcmp(setting, "LOCAL_KPA") == 0) {
+        _CONF.LOCAL_KPA = atof(value); 
+        Serial.print("_CONF.LOCAL_KPA: "); Serial.println(_CONF.LOCAL_KPA);    
+    } 
+
+    // ----------------- DIAGS PAGE -----------------------------------
+    else if(strcmp(setting, "ARMED_STATUS") == 0) {
+        DO_NOT_SAVE_FLAG = true;
+        _CONF.ARMED_STATUS = atoi(value); 
+        Serial.print("_CONF.ARMED_STATUS: "); Serial.println(_CONF.ARMED_STATUS);    
+    } 
+
+    else if(strcmp(setting, "MANUAL_STATE") == 0) {
+        DO_NOT_SAVE_FLAG = true;
+        _CONF.MANUAL_STATE = atoi(value); 
+        Serial.print("_CONF.MANUAL_STATE: "); Serial.println(_CONF.MANUAL_STATE);    
+    } 
+
     // ----------------- PYRO PAGE -----------------------------------
     else if(strcmp(setting, "PYRO_ACTIVATION_DELAY") == 0) {
         _CONF.PYRO_ACTIVATION_DELAY = atoi(value); 
@@ -399,5 +426,4 @@ void CliCommand::processSetCommand(const char* setting, const char* value) {
         buzz(PIEZO_BUZZER, 400, 1000/12);
     }
 }
-
     

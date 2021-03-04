@@ -22,8 +22,9 @@ void processTrajectory(float ypr[3]) {
     // pos_1 =(int8_t) 90-(ypr[_CONF.PITCH_AXIS] * 180/M_PI);
     // pos_2 =(int8_t) 90-(ypr[_CONF.YAW_AXIS] * 180/M_PI);
     
-    pos_1 =(int8_t) 90-(ypr[_CONF.PITCH_AXIS] );
-    pos_2 =(int8_t) 90-(ypr[_CONF.YAW_AXIS] );
+    // pos_1 =(int8_t) 90-(ypr[_CONF.PITCH_AXIS] );
+    // pos_2 =(int8_t) 90-(ypr[_CONF.YAW_AXIS] );
+
 
     if(_CONF.AUTOMATIC_ANGLE_ABORT) {
         //TODO: Compare angle to EXCESSIVE_ANGLE_THRESHOLD config constant to abort 

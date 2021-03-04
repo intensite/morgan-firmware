@@ -178,7 +178,11 @@ void Gyro::ProcessGyroData() {
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-            z_gforce = gravity.z;
+
+            //@TODO: Clean-up this 
+            // Get the Z-Axis acceleration
+            mpu.dmpGetAccel(&aa, fifoBuffer);
+            z_gforce = aa.z / 16384.0f; // gravity.z;
             
             // Serial.print("Gyro data:\t");
             // Serial.print(gyr.x);
@@ -200,9 +204,10 @@ void Gyro::ProcessGyroData() {
             ypr[_CONF.ROLL_AXIS] = (ypr[_CONF.ROLL_AXIS] * 180/M_PI);
             
 
-            // Serial.print(ypr[_CONF.PITCH_AXIS]); Serial.print("\t");
-            // Serial.print(ypr[_CONF.YAW_AXIS]); Serial.print("\t");
-            // Serial.println(ypr[_CONF.ROLL_AXIS]); //Serial.print("\t");
+            Serial.print(ypr[_CONF.PITCH_AXIS]); Serial.print("\t");
+            Serial.print(ypr[_CONF.YAW_AXIS]); Serial.print("\t");
+            Serial.print(ypr[_CONF.ROLL_AXIS]); Serial.print("\t");
+            Serial.println(z_gforce); //Serial.print("\t");
         #endif
 
         #ifdef OUTPUT_READABLE_EULER
