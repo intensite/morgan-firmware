@@ -23,6 +23,7 @@ public:
     uint8_t DATA_RECOVERY_MODE; // 1                     // Set to 1 to read collected data from memory: 0 to save data to memory
     uint8_t FORMAT_MEMORY; // 0                          // Set to 1 to erase memory.
     uint16_t SCAN_TIME_INTERVAL; // 100                  // Speed of the control loop. Interval for sensors reading.
+    float LOCAL_KPA;                                     // Used for altimeter calibration
     
     // PYRO CONTROL
     uint8_t APOGEE_DIFF_METERS; // 10                    // Difference in meters from the appogee should trigger the pyrochanel (To prevent false appogee detection).
@@ -86,6 +87,8 @@ public:
 
    int16_t VERSION;
    uint8_t ARMED_STATUS; 
+   int8_t MANUAL_STATE; 
+   bool CALIBRATE;               // Trigger bit to start calibration of the sensors
 
    
    //Static member function that returns the instance of the singleton by reference.

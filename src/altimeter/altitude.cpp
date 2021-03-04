@@ -28,7 +28,7 @@
 // ================================================================
 // ===                      INITIAL SETUP                       ===
 // ================================================================
-SimpleKalmanFilter pressureKalmanFilter(1, 1, 0.3);
+SimpleKalmanFilter pressureKalmanFilter(1, 1, 0.01);
 
 Altitude::Altitude() {};
 
@@ -51,8 +51,8 @@ int16_t Altitude::setupAlti() {
     myPressure.setStandbyTime(0);
     myPressure.setPressureOverSample(1);
     myPressure.setTempOverSample(1);
-    // myPressure.setReferencePressure(100000); // Local Atmospheric Pressure  ex: 99,9Kpa
-    myPressure.setReferencePressure(99700); // Local Atmospheric Pressure  ex: 99,9Kpa
+    // myPressure.setReferencePressure(99700); // Local Atmospheric Pressure  ex: 99,9Kpa
+    myPressure.setReferencePressure(_CONF.LOCAL_KPA*1000); // Local Atmospheric Pressure  ex: 99,9Kpa  99700
 
     delay(1000);
     // initialize device
@@ -60,14 +60,25 @@ int16_t Altitude::setupAlti() {
 
     temperature = myPressure.readTempC();
     Serial.println(F("Stabilisation current altitude...."));
+
+    for(int8_t i=0; i<10; i++) {
+        myPressure.readFloatPressure();
+        pressure += myPressure.readFloatPressure();
+    }
+
+    pressure/= 10; // Average pressure measurements
+    pressure_offset = _CONF.LOCAL_KPA*1000 - pressure;
+
     // The BMx280 'saves' the last reading in memory for you to query. Just read twice in a row and toss out the first reading!
-    for(int8_t i=0; i<20; i++) {
-        temperature = myPressure.readTempC();
-        altitude_offset = myPressure.readFloatAltitudeMeters(); 
-        Serial.print(F("Temperature=")); Serial.print(myPressure.readTempC(), 2);
+    for(int8_t i=0; i<10; i++) {
+        altitude_offset += readFloatAltitudeMeters(); 
+        // Serial.print(F("Temperature=")); Serial.print(myPressure.readTempC(), 2);
         Serial.print(F("  Altitude Offset=")); Serial.println(altitude_offset);
         delay(500);
     }
+
+    temperature = myPressure.readTempC();
+    altitude_offset /= 10; // Average offset measurements
     Serial.print(F("Altitude Offset = ")); Serial.println(altitude_offset); 
     if (altitude_offset == -999) {
         return -999;  // Error out after max of 512ms for a read
@@ -80,14 +91,15 @@ int16_t Altitude::setupAlti() {
 
 float Altitude::processAltiData() {
 
+    temperature = myPressure.readTempC();
+    pressure = (myPressure.readFloatPressure() + pressure_offset) /1000;
+    
     // Get the current altitude using the altitude_offset
-    current_altitude = myPressure.readFloatAltitudeMeters() - altitude_offset;
+    current_altitude = readFloatAltitudeMeters() - altitude_offset;
     current_altitude = pressureKalmanFilter.updateEstimate(current_altitude);
     // Serial.print(F("current_altitude = ")); Serial.println(current_altitude); 
 
-    temperature = myPressure.readTempC();
-    pressure = myPressure.readFloatPressure() / 1000;
-    humidity = myPressure.readFloatHumidity();
+    // humidity = myPressure.readFloatHumidity();
     
     // Ignore negative altitude
     if (current_altitude < 0) {
@@ -191,4 +203,18 @@ bool Altitude::detectTouchDown() {
         return true;
     else 
         return false;
+}
+
+
+float Altitude::readFloatAltitudeMeters( )
+{
+	float heightOutput = 0;
+	float _pressure = myPressure.readFloatPressure() + pressure_offset;
+    // const float see_level = 101.325 * 1000;
+    const float see_level = _CONF.LOCAL_KPA * 1000;
+
+	// heightOutput = ((float)-44330.77)*(pow(((float)readFloatPressure()/(float)_referencePressure), 0.190263) - (float)1); //Corrected, see issue 30
+	heightOutput = ((float)-44330.77)*(pow(((float)_pressure/see_level), 0.190263) - (float)1); //Corrected, see issue 30
+	return heightOutput;
+	
 }

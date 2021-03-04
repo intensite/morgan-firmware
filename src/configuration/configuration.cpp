@@ -14,12 +14,15 @@ static Configuration& instance();
 Configuration::Configuration() {
     // initialize the properties with some default values
     this->ARMED_STATUS = 0;
+    this->MANUAL_STATE = -1;
     this->DEBUG = 1;
     this->BUZZER_ENABLE = 0;
     this->MEMORY_CARD_ENABLED = 1;
     this->DATA_RECOVERY_MODE = 0;
     this->FORMAT_MEMORY = 0;
     this->SCAN_TIME_INTERVAL = 100;
+    this->LOCAL_KPA = 101.3;
+    this->CALIBRATE = false;    // Should always be false except when requesting calibration
 
 
     // PYRO CONTROL
@@ -143,6 +146,7 @@ bool Configuration::readConfig() {
     this->DATA_RECOVERY_MODE = doc["DATA_RECOVERY_MODE"]; // 1
     this->FORMAT_MEMORY = doc["FORMAT_MEMORY"]; // 0
     this->SCAN_TIME_INTERVAL = doc["SCAN_TIME_INTERVAL"]; // 100
+    this->LOCAL_KPA = doc["LOCAL_KPA"];
 
     // PYRO CONTROL
     this->APOGEE_DIFF_METERS = doc["APOGEE_DIFF_METERS"]; // 10
@@ -235,6 +239,7 @@ int Configuration::saveConfig() {
     doc["DATA_RECOVERY_MODE"] = this->DATA_RECOVERY_MODE;
     doc["FORMAT_MEMORY"] = this->FORMAT_MEMORY;
     doc["SCAN_TIME_INTERVAL"] = this->SCAN_TIME_INTERVAL;
+    doc["LOCAL_KPA"] = this->LOCAL_KPA;
 
     // PYRO CONTROL
     doc["APOGEE_DIFF_METERS"] = this->APOGEE_DIFF_METERS;
