@@ -2,7 +2,6 @@
                     // Has to be done before including "OTA.h"
 
 #include "./ota/OTA.h"
-// #include <credentials.h>
 
 #include <Arduino.h>
 #include "./config.h"
@@ -17,6 +16,7 @@
 #include "./storage/LogSystem.h"
 #include "./configuration/configuration.h"
 #include "./data/data.h"
+#include "./radio/radio.h"
 // #include "./storage/LogSystem_SD.h"
 #include "./parachute/parachute.h"
 #include <Wire.h>
@@ -24,11 +24,9 @@
 #include "./websocket/ws.h"
 #include "./command/command.h"
 #include "./lib/TaskScheduler.h"
-
 #include "./lib/TaskScheduler.h"
 #include "CREDENTIALS"
 
-// Configuration& conf = _CONF; //Configuration::instance();
 
 enum State_enum {LAUNCHPAD, ARMED, THRUST_ST1, COASTING_INTER, THRUST_ST2, COASTING, DESCENT, CHUTE_DESCENT, LANDED };
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
@@ -55,6 +53,9 @@ CliCommand cli;
 bool ledStatus;
 // Scheduler
 Scheduler ts;
+// Task (object) for second Core (Used to run radio and GPS stuff)
+TaskHandle_t TaskCore0;
+
 
 void flashLEDcb();
 void beepSequencecb();
@@ -74,6 +75,8 @@ void state_DESCENT();
 void state_CHUTE_DESCENT();
 void state_LANDED();
 void displaySensorData();
+void loopCore0(void *);
+void calibrate();
 
 // ================================================================
 // Tasks definition
@@ -127,6 +130,10 @@ void testSequence() {
     Serial.println(F("End of tests..........."));
 }
 
+
+// ================================================================
+// ===      persistData: store flight data to flash memory     ===
+// ================================================================
 int8_t persistData() {
 
     if(_CONF.MEMORY_CARD_ENABLED == 0 ) {
@@ -170,13 +177,17 @@ int8_t persistData() {
 // ================================================================
 void setup() {
 
+    // Remap the hardware serial ports so we can use the default Rx/Tx pins for Serial 2
+    // HardwareSerial Serial(2);
+    // HardwareSerial Serial2(0);
+
 
     // initialize serial communication
     Serial.begin(115200);
     Serial.println("Booting");
 
     if(USE_OTA_UPDATE)
-        setupOTA("TemplateSketch", SSID, PASSWORD);
+        setupOTA("Morgan", SSID, PASSWORD);
 
     is_abort = false;
     is_parachute_deployed = false;
@@ -198,6 +209,7 @@ void setup() {
 
     pinMode(PIEZO_BUZZER, OUTPUT);
     pinMode(PARACHUTE_IGNITER_PIN, OUTPUT); digitalWrite(PARACHUTE_IGNITER_PIN, LOW);
+    pinMode(LAUCH_DETECTION_PIN, INPUT_PULLUP);
 
     //************************************************************************************
     // RESET MEMORY VARIABLES  (Now set from bluetooth)
@@ -223,7 +235,54 @@ void setup() {
     setupWebSocket(cli);
 
     setupServo();
+
+    calibrate();
     
+    // ================================================================
+    // ===               Storage system initialization              ===
+    // ================================================================
+    Serial.println(F("Initialize the log system"));
+    Serial.print("_CONF.MEMORY_CARD_ENABLED : "); Serial.println(_CONF.MEMORY_CARD_ENABLED);
+    
+    delay(2000);
+    // FLASH LOG SYSTEM
+    if (!lr::Storage::begin()) {
+        Serial.println("Storage Problem");
+        is_abort = true;
+        return;
+    } else {
+        lr::LogSystem::begin(0);  
+        Serial.println("Storage seems OK");
+    }
+    // End of Storage system initialization
+    // ================================================================    
+
+    testSequence();
+    
+    // if(_CONF.DEBUG && IS_READY_TO_FLY) {
+    //     debugParachute();  // WARNING TEST ONLY! REMOVE THIS LINE BEFORE FLIGHT.
+    // }
+
+    // Setup radio(nRF24) and GPS
+    setupRadio();
+
+    // Create a task to process slow radio and GPS stuff on the second core of the ESP32
+    // Pin it to CORE-0
+    xTaskCreatePinnedToCore(
+        loopCore0, /* Function to implement the task */
+        "TaskCore0", /* Name of the task */
+        10000,  /* Stack size in words */
+        NULL,  /* Task input parameter */
+        0,  /* Priority of the task */
+        &TaskCore0,  /* Task handle. */
+        0); /* Core where the task should run */
+
+}
+
+void calibrate() {
+     Serial.print("CALIBRATION TRIGGERED!! ");
+     Serial.println(_CONF.LOCAL_KPA);
+
     if (gyro.setupGyro() != 0) {
         setup_error = true;
         // LED RED
@@ -242,32 +301,7 @@ void setup() {
         return;
     }
 
-    // ================================================================
-    // ===               Storage system initialization              ===
-    // ================================================================
-    Serial.println(F("Initialize the log system"));
-    Serial.print("_CONF.MEMORY_CARD_ENABLED : "); Serial.println(_CONF.MEMORY_CARD_ENABLED);
-    
-    delay(2000);
-    // FRAM LOG SYSTEM
-    if (!lr::Storage::begin()) {
-        Serial.println("Storage Problem");
-        is_abort = true;
-        return;
-    } else {
-        lr::LogSystem::begin(0);  
-        Serial.println("Storage seems OK");
-    }
-    // End of Storage system initialization
-    // ================================================================    
-
-    testSequence();
-    
-    // if(_CONF.DEBUG && IS_READY_TO_FLY) {
-    //     debugParachute();  // WARNING TEST ONLY! REMOVE THIS LINE BEFORE FLIGHT.
-    // }
 }
-
 
 // ================================================================
 // ===               Main loop                                  ===
@@ -300,6 +334,15 @@ void loop() {
     if (currentMillis - previousMillis >= _CONF.SCAN_TIME_INTERVAL) {
         previousMillis = currentMillis; 
 
+        //****************************************
+        // WARNING!!
+        // Manual Mode Overide
+        if(_CONF.MANUAL_STATE != -1) {
+            currentState = (State_enum)_CONF.MANUAL_STATE;
+            _CONF.MANUAL_STATE = -1;    // Reset MANUAL_STATE
+        }
+        //****************************************
+
         //enum State_enum {LAUNCHPAD, ARMED, THRUST_ST1, THRUST_ST2, COASTING, DESCENT, CHUTE_DESCENT, LANDED };
         switch(currentState) {
             case LAUNCHPAD:
@@ -310,8 +353,10 @@ void loop() {
                 break;
             case THRUST_ST1:
                 state_THRUST_ST1();
+                break;
             case COASTING_INTER:
                 state_COASTING_INTER();
+                break;
             case THRUST_ST2:
                 state_THRUST_ST2();
                 break;
@@ -334,7 +379,7 @@ void loop() {
 
     // Debug stuff (Make sure to disable before flight)
     if (_CONF.DEBUG) 
-        displaySensorData();  // Output sensors data to serial console.  Enabled only in DEBUG Mode to maximize computer performances.
+        //displaySensorData();  // Output sensors data to serial console.  Enabled only in DEBUG Mode to maximize computer performances.
 
     // Persist flight data to memory 
     //@TODO:  Decide if data persistance should be moved in a state function or not
@@ -344,6 +389,17 @@ void loop() {
 
     // Execute all the enabled tasks according to their respective schedules 
     ts.execute();
+}
+
+
+
+// Paralel loop to process slow radio and GPS stuff on the second core of the ESP32
+// Pin it to CORE-0
+void loopCore0(void * parameter) {
+    // It must run forever, so this is the construct
+    for (;;) {
+        updateRadioGPS();
+    }
 }
 
 
@@ -384,6 +440,9 @@ void flashLEDcb() {
             led_color(LED_COLOR_GREEN);
         }
     }
+
+    
+
 }
 
 void beepSequencecb() {
@@ -430,7 +489,7 @@ void measureVoltage_cb() {
         //Serial.print("Voltage: "); Serial.println((float)(temp/10));
 }
 
-bool detectLiftoff() {
+bool detectLiftoff() {  //@TODO:  To be completely rewriten using mechanical switch as accelerometer wasn't reliable
     /** 
      * To be used only on the LAUNCHPAD state
      * Using the accelerometer, if the accelleration on the Z axis is >= than Threshold (Use a constant here)
@@ -438,7 +497,23 @@ bool detectLiftoff() {
      * return true, else return false
      */
 
-    if(abs(gyro.z_gforce) >= 1.5 ) {
+    // Old accelerometer method
+    // if(abs(gyro.z_gforce) >= 1.5 ) {
+    //     if (previousLaunchMillis == 0) {
+    //         previousLaunchMillis = millis();
+    //     }
+
+    //     if((millis() - previousLaunchMillis) >= 100) {
+    //         return true;
+    //     } else {
+    //         return false;
+    //     }
+    // } else {
+    //     previousLaunchMillis = 0;
+    //     return false;
+    // }
+
+    if(digitalRead(LAUCH_DETECTION_PIN) == HIGH ) {
         if (previousLaunchMillis == 0) {
             previousLaunchMillis = millis();
         }
@@ -457,7 +532,7 @@ bool detectLiftoff() {
 bool detectBurnout() {
     /** 
      * Used durring powered flight stages to detect when engins burnout
-     * Using the accelerometer, if the accelleration on the Z axis is >= than Threshold (Use a constant here)
+     * Using the accelerometer, if the accelleration on the Z axis is <= than Threshold (Use a constant here)
      * for more than 0.1 Second (Use another contant here)
      * return true, else return false
      */
@@ -469,7 +544,7 @@ bool detectBurnout() {
             previousBurnoutMillis = millis();
         }
 
-        if((millis() - previousBurnoutMillis) >= 100) {
+        if((millis() - previousBurnoutMillis) >= BURNOUT_TIMER) {
             return true;
         } else {
             return false;
@@ -503,8 +578,15 @@ bool detectTouchDown() {
  ****************************************************************************************************************************/
 void state_LAUNCHPAD() {
 
+    //Serial.println(F("state_LAUNCHPAD"));
     // Disable beeps until ARMED and keep LED
     tbeepSequence.disable();
+
+    // Calibrate sensors
+    if(_CONF.CALIBRATE) {
+        _CONF.CALIBRATE = false;
+        calibrate();
+    }
 
     // Memory format 
     if(_CONF.FORMAT_MEMORY) {
@@ -543,6 +625,7 @@ void state_LAUNCHPAD() {
 
 void state_ARMED() {
 
+    //Serial.println(F("state_ARMED"));
     // Handle communication with outside world
     processWebSocket();
     cli.handleSerial();
@@ -570,6 +653,7 @@ void state_ARMED() {
         // tupdateBLEGuidanceConfig.disable();
 
         // Chage state to Powered Flight
+        Serial.println("Chage state to THRUST_ST1");
         currentState = THRUST_ST1;
     }  
 
@@ -578,85 +662,157 @@ void state_ARMED() {
 
 void state_THRUST_ST1() {
 
+    //Serial.println(F("state_THRUST_ST1"));
     // debug only, disable in flight condition
     // Handle communication with outside world 
-    if (_CONF.DEBUG) {
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
         processWebSocket();
         cli.handleSerial();
+        tbeepSequence.disable();
     }
 
     // Process trajectory with the servos
     processTrajectory(gyro.ypr);
 
     if (detectBurnout()) {
-        // Chage state to Coasting Inter Stage
-        currentState = COASTING;
+
+        if (DOUBLE_STAGE_CONFIG == 1) {
+            // Chage state to Coasting Inter Stage
+            Serial.println("Chage state to COASTING_INTER");
+            currentState = COASTING_INTER;
+        } else {
+            Serial.println("Chage state to COASTING");
+            currentState = COASTING;
+        }
     }
     
     //  Check for apogee even during the first power stage
     if(altitude.detectApogee()) {
         // Chage state to Descent
+        Serial.println("Chage state to DESCENT");
         currentState = DESCENT;
     }
 }
 
 void state_COASTING_INTER() { 
+    //Serial.println(F("state_COASTING_INTER"));
 
-    if (detectLiftoff()) {
-            // Detect the thrust of the second stage
-            Serial.println("Acceleration detected");
-            currentState = THRUST_ST2;
+    // debug only, disable in flight condition
+    // Handle communication with outside world 
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+        processWebSocket();
+        cli.handleSerial();
+        tbeepSequence.disable();
+    }
+
+    if (DOUBLE_STAGE_CONFIG == 1) {
+        if (detectLiftoff()) {
+                // Detect the thrust of the second stage
+                Serial.println("Acceleration detected");
+                Serial.println("Chage state to THRUST_ST2");
+                currentState = THRUST_ST2;
+        }
     }
 
     if(altitude.detectApogee()) {
         // Chage state to Descent
+         Serial.println("Chage state to DESCENT");
         currentState = DESCENT;
     }
 }
 
 void state_THRUST_ST2() {
+
+    //Serial.println(F("state_THRUST_ST2"));
     
+    // debug only, disable in flight condition
+    // Handle communication with outside world 
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+        processWebSocket();
+        cli.handleSerial();
+        tbeepSequence.disable();
+    }
+
     // Process trajectory with the servos
     processTrajectory(gyro.ypr);
 
     if (detectBurnout()) {
         // Chage state to final Coasting
+         Serial.println("Chage state to COASTING");
         currentState = COASTING;
     }
     
     //  Check for apogee even during the second power stage
     if(altitude.detectApogee()) {
         // Chage state to Descent
+        Serial.println("Chage state to DESCENT");
         currentState = DESCENT;
     }
 }
 
 void state_COASTING() { 
     // Final Coasting stage before apogee
+    //Serial.println(F("state_COASTING"));
+
+    // debug only, disable in flight condition
+    // Handle communication with outside world 
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+        processWebSocket();
+        cli.handleSerial();
+        tbeepSequence.disable();
+    }
 
     if(altitude.detectApogee()) {
         // Chage state to uncontroled descent
+        Serial.println("Chage state to DESCENT");
         currentState = DESCENT;
     }
 }
 
 void state_DESCENT() { 
+
+    //Serial.println(F("state_DESCENT"));
+
+    // debug only, disable in flight condition
+    // Handle communication with outside world 
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+        processWebSocket();
+        cli.handleSerial();
+        tbeepSequence.disable();
+    }
+
     //Detect Parachute Altitude
     if(altitude.detectChuteAltitude()) {
         // Chage state to PARACHUTE CONTROLED DESCENT
+        Serial.println("Chage state to CHUTE_DESCENT");
         currentState = CHUTE_DESCENT;
     }
 }
 
 void state_CHUTE_DESCENT() { 
+
+    //Serial.println(F("state_CHUTE_DESCENT"));
+    // debug only, disable in flight condition
+    // Handle communication with outside world 
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+        processWebSocket();
+        cli.handleSerial();
+        tbeepSequence.disable();
+    }
+
     if(altitude.detectTouchDown()) {
+        Serial.println("Chage state to LANDED");
         // Chage state to LANDED
         currentState = LANDED;
     }
 
 }
 void state_LANDED() { 
+    //Serial.println(F("state_LANDED"));
+    processWebSocket();
+    cli.handleSerial();
 
+    tbeepSequence.enable();  // Enable the beep signal to help find the landed rocket
 
 }
 

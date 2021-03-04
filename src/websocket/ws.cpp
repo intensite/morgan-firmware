@@ -93,7 +93,7 @@ void setupWebSocket(CliCommand& cliPtr) {
           {
               Serial.print(".");
           }
-
+          WiFi.setHostname("MORGAN");
           Serial.println();
           Serial.println("WiFi connected!");
           Serial.print("IP address: ");
@@ -163,7 +163,8 @@ void updatePrefs() {
 
     char param_str[50];
 
-  sprintf(param_str, "T2|%d|%d|%d|%d|%d|%d", _CONF.DEBUG, _CONF.BUZZER_ENABLE, _CONF.MEMORY_CARD_ENABLED, _CONF.DATA_RECOVERY_MODE, _CONF.FORMAT_MEMORY, _CONF.SCAN_TIME_INTERVAL);
+  sprintf(param_str, "T2|%d|%d|%d|%d|%d|%d|%f", _CONF.DEBUG, _CONF.BUZZER_ENABLE, _CONF.MEMORY_CARD_ENABLED, _CONF.DATA_RECOVERY_MODE, _CONF.FORMAT_MEMORY, 
+                                            _CONF.SCAN_TIME_INTERVAL, _CONF.LOCAL_KPA);
   webSocket.sendTXT(_client_num, param_str);
 
 }
