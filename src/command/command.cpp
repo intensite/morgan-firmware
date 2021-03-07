@@ -197,6 +197,14 @@ void CliCommand::processGetCommand(const char* setting) {
         Serial.print("Calibration requested..........");
         _CONF.CALIBRATE = true;
     } 
+    else if(strcmp(setting, "RESET") == 0) {
+        Serial.print("Reset computer requested..........");
+        // Emit a sound to acknolege the processing of the command
+        //@TODO: Change tune to something different
+        buzz(PIEZO_BUZZER, 1500, 750/12);
+        buzz(PIEZO_BUZZER, 400, 1000);
+        ESP.restart();
+    } 
 }
 
 void CliCommand::processSetCommand(const char* setting, const char* value) {
