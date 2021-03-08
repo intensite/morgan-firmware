@@ -427,7 +427,12 @@ void flashLEDcb() {
             // delay(50);
             // led_color(LED_COLOR_OFF);
             // delay(100);
-            led_color(LED_COLOR_BLUE);
+
+            if( currentState == ARMED ) {
+                led_color(LED_COLOR_PURPLE);
+            } else {
+                led_color(LED_COLOR_BLUE);
+            }
         }else {
             // led_color(LED_COLOR_GREEN);
             // delay(50);
@@ -437,7 +442,11 @@ void flashLEDcb() {
             // delay(50);
             // led_color(LED_COLOR_OFF);
             // delay(100);
-            led_color(LED_COLOR_GREEN);
+            if( currentState == ARMED ) {
+                led_color(LED_COLOR_PURPLE);
+            } else {
+                led_color(LED_COLOR_GREEN);
+            }
         }
     }
 
@@ -661,14 +670,13 @@ void state_ARMED() {
 
 
 void state_THRUST_ST1() {
-
+    
     //Serial.println(F("state_THRUST_ST1"));
     // debug only, disable in flight condition
     // Handle communication with outside world 
     if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
         processWebSocket();
         cli.handleSerial();
-        tbeepSequence.disable();
     }
 
     // Process trajectory with the servos
