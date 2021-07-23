@@ -36,19 +36,19 @@ namespace lr {
 
 // Default null record constructor
 LogRecord::LogRecord() 
-        : _timestamp(0), _state(0), _altitude(0), _pitch(0), _roll(0), 
-        _pitchServo(0), _rollServo(0), _parachute(0), _abort(0), 
+        : _timestamp(0), _state(0), _altitude(0), _pitch(0), _yaw(0), _roll(0), 
+        _pitchServo(0), _yawServo(0), _rollServo(0), _parachute(0), _abort(0), 
         _temperature(0), _battery(0), _gForces(0)
 {
 
 }
 
 // constructor
-LogRecord::LogRecord(unsigned long timestamp, byte state, unsigned int altitude, int pitch, int roll, 
-                int pitchServo, int rollServo, bool parachute, bool abort, 
+LogRecord::LogRecord(unsigned long timestamp, byte state, unsigned int altitude, int pitch, int yaw, int roll, 
+                int pitchServo, int yawServo, int rollServo, bool parachute, bool abort, 
                 byte temperature, byte battery, byte gForces)
-        : _timestamp(timestamp), _state(state), _altitude(altitude), _pitch(pitch), _roll(roll), 
-        _pitchServo(pitchServo), _rollServo(rollServo), _parachute(parachute), _abort(abort), 
+        : _timestamp(timestamp), _state(state), _altitude(altitude), _pitch(pitch), _yaw(yaw), _roll(roll), 
+        _pitchServo(pitchServo), _yawServo(yawServo), _rollServo(rollServo), _parachute(parachute), _abort(abort), 
         _temperature(temperature), _battery(battery), _gForces(gForces)
 {
     // Make data adjustments here if needed
@@ -79,9 +79,13 @@ void LogRecord::writeToSerial() const
     Serial.print(",");
     Serial.print(_pitch);
     Serial.print(",");
+    Serial.print(_yaw);
+    Serial.print(",");
     Serial.print(_roll);
     Serial.print(",");
     Serial.print(_pitchServo);
+    Serial.print(",");
+    Serial.print(_yawServo);
     Serial.print(",");
     Serial.print(_rollServo);
     Serial.print(",");
@@ -107,8 +111,10 @@ void LogRecord::writeToCSV(char** rec, size_t *rec_len)
     str << _state << ",";
     str << _altitude << ",";
     str << _pitch << ",";
+    str << _yaw << ",";
     str << _roll << ",";
     str << _pitchServo << ",";
+    str << _yawServo << ",";
     str << _rollServo << ",";
     str << _parachute << ",";
     str << _abort << ",";
@@ -143,8 +149,10 @@ struct InternalLogRecord
     byte state;    // Milliseconds since start
     unsigned int altitude;
     int pitch;
+    int yaw;
     int roll;
     int pitchServo;
+    int yawServo;
     int rollServo;
     bool parachute;
     bool abort;
@@ -308,8 +316,8 @@ LogRecord getLogRecord(uint32_t index) {
         return LogRecord();
     }
     const InternalLogRecord record = getInternalRecord(index);
-    return LogRecord(record.timestamp, record.state, record.altitude, record.pitch, 
-                    record.roll, record.pitchServo, record.rollServo, 
+    return LogRecord(record.timestamp, record.state, record.altitude, record.pitch, record.yaw, 
+                    record.roll, record.pitchServo, record.yawServo, record.rollServo, 
                     record.parachute, record.abort, record.temperature, record.battery, record.gForces);
 }
 
@@ -330,8 +338,10 @@ bool appendRecord(const LogRecord &logRecord)
     internalRecord.state = logRecord._state;
     internalRecord.altitude = logRecord._altitude;
     internalRecord.pitch = logRecord._pitch;
+    internalRecord.yaw = logRecord._yaw;
     internalRecord.roll = logRecord._roll;
     internalRecord.pitchServo = logRecord._pitchServo;
+    internalRecord.yawServo = logRecord._yawServo;
     internalRecord.rollServo = logRecord._rollServo;
     internalRecord.parachute = logRecord._parachute;
     internalRecord.abort = logRecord._abort;
@@ -350,8 +360,8 @@ bool appendRecord(const LogRecord &logRecord)
  */
 bool markBeginingOfDataSet() {
 
-    LogRecord logRecord(99999,9,99999, 999, 999, 
-                999, 999, false, false, 
+    LogRecord logRecord(99999,9,99999, 999, 999, 999, 
+                999, 999, 999, false, false, 
                99, 99, 99);
 
     return appendRecord(logRecord);

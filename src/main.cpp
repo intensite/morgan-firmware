@@ -153,8 +153,10 @@ int8_t persistData() {
         // (int16_t) (gyro.ypr[_CONF.PITCH_AXIS] * 180/M_PI),  // Pitch: Must be improved
         // (int16_t) (gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI),  // Roll:  Must be improved
         (int16_t) (gyro.ypr[_CONF.PITCH_AXIS]),  // Pitch: Must be improved
+        (int16_t) (gyro.ypr[_CONF.YAW_AXIS]),  // Yaw: Must be improved
         (int16_t) (gyro.ypr[_CONF.ROLL_AXIS]),  // Roll:  Must be improved
         g_servo_pitch, // Servo Pitch: ToDo
+        g_servo_yaw, // Servo Yaw: ToDo
         g_servo_roll, // Servo Roll : ToDo
         is_parachute_deployed, 
         is_abort, 
@@ -268,6 +270,15 @@ void setup() {
 
     // Create a task to process slow radio and GPS stuff on the second core of the ESP32
     // Pin it to CORE-0
+    /**
+     * Note: If system reboots with this message: "Task watchdog got triggered. The following tasks did not feed the watchdog in time"
+     * This means the loop on the core 0 is not yelding fast enough.  It happends when it is empty.
+     * I noticed that the problem seems to dissapear with a small delay like vTaskDelay(10) inside the function that implements the loop loopCore0 in this case.
+     * The whole pinned task can also be disabled if not required by commenting the xTaskCreatePinnedToCore(...) function call bellow.
+     * 
+     * Update as of 2021-06-04:  Disabling the WDT on core 0 with disableCore0WDT() and enableCore0WDT() before reading memory is a more elegant fix.
+     */
+    /* Activate the second core loop if needed for radio and GPS stuff.  Disable/comment if not required */
     xTaskCreatePinnedToCore(
         loopCore0, /* Function to implement the task */
         "TaskCore0", /* Name of the task */
@@ -399,6 +410,7 @@ void loopCore0(void * parameter) {
     // It must run forever, so this is the construct
     for (;;) {
         updateRadioGPS();
+        // vTaskDelay(10);  // Prevent "Task watchdog got triggered." message and reboot.
     }
 }
 
@@ -601,16 +613,20 @@ void state_LAUNCHPAD() {
     if(_CONF.FORMAT_MEMORY) {
         _CONF.FORMAT_MEMORY = 0;
         _CONF.MEMORY_CARD_ENABLED = 0;
+        disableCore0WDT();  // Disable Watchdog on Core-0
         Serial.println(F("**** Erassing memory....This takes a while...."));
         lr::LogSystem::format();
         delay(20000); // 20 Sec. seems to do the job just fine
+        enableCore0WDT();   // Enable Watchdog on Core-0
         Serial.print("Is flash chip busy? : "); Serial.println(lr::LogSystem::isBusy());
     }
 
     // Recover data from memory (Should maybe be moved to a pre-flight stage)
     if (_CONF.DATA_RECOVERY_MODE) {
         _CONF.DATA_RECOVERY_MODE = 0;
+        disableCore0WDT();  // Disable Watchdog on Core-0
         readDataToSerial();
+        enableCore0WDT();   // Enable Watchdog on Core-0
         // readDataToBLE();  //@TODO: Change for Wifi transmission of flight data
     }
 

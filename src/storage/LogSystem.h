@@ -40,8 +40,8 @@ public:
     /// @param humidity The humidity as percentage 0-100.
     ///
     // LogRecord(const DateTime &dateTime, float temperature, float humidity);
-    LogRecord(unsigned long timestamp, byte state, unsigned int altitude, int pitch, int roll, 
-                int pitchServo, int rollServo, bool parachute, bool abort, 
+    LogRecord(unsigned long timestamp, byte state, unsigned int altitude, int pitch, int yaw, int roll, 
+                int pitchServo, int yawServo, int rollServo, bool parachute, bool abort, 
                 byte temperature, byte battery, byte gForces);
                 
     /// Create a special null record.
@@ -81,12 +81,14 @@ public:
     void writeToCSV(char **rec, size_t *rec_len);
     
 public:     // Public for now.  Maybe getter and setters would be more appropriate
-    unsigned long _timestamp;  // Milliseconds since start
+    unsigned long _timestamp;  // Milliseconds since start 4bytes
     byte _state;
     unsigned int _altitude;
     int _pitch;
+    int _yaw;
     int _roll;
     int _pitchServo;
+    int _yawServo;
     int _rollServo;
     bool _parachute;
     bool _abort;
