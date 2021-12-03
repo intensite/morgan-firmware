@@ -11,7 +11,7 @@ class Altitude {
     public:
         float altitude_offset=0;
         float pressure_offset=0;
-        float current_altitude;
+        static float current_altitude;
         float previous_altitude;
         bool is_apogee;
         float altitude_max;

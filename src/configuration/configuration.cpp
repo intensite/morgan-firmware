@@ -15,6 +15,7 @@ Configuration::Configuration() {
     // initialize the properties with some default values
     this->ARMED_STATUS = 0;
     this->MANUAL_STATE = -1;
+    this->SIMULATION_MODE = 0;
     this->DEBUG = 1;
     this->BUZZER_ENABLE = 0;
     this->MEMORY_CARD_ENABLED = 1;

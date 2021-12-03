@@ -30,7 +30,9 @@
 // ================================================================
 SimpleKalmanFilter pressureKalmanFilter(1, 1, 0.01);
 
+
 Altitude::Altitude() {};
+float Altitude::current_altitude = 0;
 
 int16_t Altitude::setupAlti() {
     // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -69,6 +71,9 @@ int16_t Altitude::setupAlti() {
     pressure/= 10; // Average pressure measurements
     pressure_offset = _CONF.LOCAL_KPA*1000 - pressure;
 
+    Serial.println(pressure_offset);
+    Serial.println(pressure);
+
     // The BMx280 'saves' the last reading in memory for you to query. Just read twice in a row and toss out the first reading!
     for(int8_t i=0; i<10; i++) {
         altitude_offset += readFloatAltitudeMeters(); 
@@ -91,19 +96,22 @@ int16_t Altitude::setupAlti() {
 
 float Altitude::processAltiData() {
 
-    temperature = myPressure.readTempC();
-    pressure = (myPressure.readFloatPressure() + pressure_offset) /1000;
-    
-    // Get the current altitude using the altitude_offset
-    current_altitude = readFloatAltitudeMeters() - altitude_offset;
-    current_altitude = pressureKalmanFilter.updateEstimate(current_altitude);
-    // Serial.print(F("current_altitude = ")); Serial.println(current_altitude); 
+    if (!_CONF.SIMULATION_MODE) {
+        // If not in simulation mode, read temperature and pressure from the sensor
+        temperature = myPressure.readTempC();
+        pressure = (myPressure.readFloatPressure() + pressure_offset) /1000;
+        
+        // Get the current altitude using the altitude_offset
+        current_altitude = readFloatAltitudeMeters() - altitude_offset;
+        current_altitude = pressureKalmanFilter.updateEstimate(current_altitude);
+        // Serial.print(F("current_altitude = ")); Serial.println(current_altitude); 
 
-    // humidity = myPressure.readFloatHumidity();
-    
-    // Ignore negative altitude
-    if (current_altitude < 0) {
-        current_altitude = 0;
+        // humidity = myPressure.readFloatHumidity();
+        
+        // Ignore negative altitude
+        if (current_altitude < 0) {
+            current_altitude = 0;
+        }
     }
 
     // Record the max altitude (overide)
@@ -114,6 +122,7 @@ float Altitude::processAltiData() {
     // Replace the previous_altitude with the current altitude for next pass.
     previous_altitude = current_altitude;
     return current_altitude;
+
 }
 
 bool Altitude::detectApogee() {

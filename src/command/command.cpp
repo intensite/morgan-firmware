@@ -3,11 +3,13 @@
 #include "../config.h"
 #include "../buzzer/buzzer.h"
 #include "../parachute/parachute.h"
+#include "../simulation/simulation.h"
 #include "../configuration/configuration.h"
 // #include "../gyro/gyro.h"
 // #include "../altimeter/altitude.h"
 #include <SimpleCLI.h>
 
+Simulation simul; 
 
 CliCommand::CliCommand() {
     cmdGet = cli.addCommand("get");
@@ -25,17 +27,20 @@ void CliCommand::handleSerial() {
    static int length = 0; // number of characters currently in the buffer
 //    static boolean newData = false;
 
-    //    if(Serial.available())
-    // while (Serial.available() > 0 && newData == false) {
     while (Serial.available() > 0 ) {
         char c = Serial.read();
         if((c == '\r') || (c == '\n')){
         // if(c == ';') {
             // end-of-line received
-            Serial.println("end-of-line received");
+            // Serial.println("end-of-line received");
+            Serial.println(".");
             
             if(length > 0) {
-                this->handleReceivedMessage(buffer);
+                if(_CONF.SIMULATION_MODE) {
+                    simul.handleReceivedMessage(buffer);
+                } else {
+                    this->handleReceivedMessage(buffer);
+                }
             }
             length = 0;
             // newData = true;
@@ -303,6 +308,11 @@ void CliCommand::processSetCommand(const char* setting, const char* value) {
         DO_NOT_SAVE_FLAG = true;
         // Reset ALL pyro channels at once!
         resetPyro();
+    } 
+    else if(strcmp(setting, "SIM_MODE") == 0) {
+        DO_NOT_SAVE_FLAG = true;
+        _CONF.SIMULATION_MODE = atoi(value);
+        Serial.print("_CONF.SIMULATION_MODE: "); Serial.println(_CONF.SIMULATION_MODE);  
     } 
     // ----------------- GUIDANCE PAGE -----------------------------------
     else if(strcmp(setting, "PITCH_AXIS") == 0) {

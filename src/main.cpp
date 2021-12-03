@@ -140,16 +140,31 @@ int8_t persistData() {
         return 0;
     }
 
-    if(gyro.ypr[1] == 0 || gyro.ypr[2] ==0) {
-         Serial.println("Data invalid do nothing");
-        // Data invalid do nothing
-        return 1;
+
+    // // NOT SURE THIS IS RELEVANT ANYMORE
+    // if(gyro.ypr[1] == 0 || gyro.ypr[2] ==0) {
+    //      Serial.println("Data invalid do nothing");
+    //     // Data invalid do nothing
+    //     return 1;
+    // }
+
+
+    // Used to save Memory space
+    if(_CONF.DEBUG) {
+        // Skip memory saving features
+    } else {
+        // Used to save Memory space
+        if(currentState < THRUST_ST1 || (currentState == LANDED && altitude.current_altitude == 0)) {
+            // Serial.println("Data invalid do nothing");
+            // Data invalid do nothing
+            return 1;
+        }
     }
 
     lr::LogRecord logRecord(
         millis(), 
         currentState,
-        altitude.current_altitude, 
+        static_cast<unsigned int>(altitude.current_altitude), 
         // (int16_t) (gyro.ypr[_CONF.PITCH_AXIS] * 180/M_PI),  // Pitch: Must be improved
         // (int16_t) (gyro.ypr[_CONF.ROLL_AXIS] * 180/M_PI),  // Roll:  Must be improved
         (int16_t) (gyro.ypr[_CONF.PITCH_AXIS]),  // Pitch: Must be improved
@@ -390,7 +405,7 @@ void loop() {
 
     // Debug stuff (Make sure to disable before flight)
     if (_CONF.DEBUG) 
-        //displaySensorData();  // Output sensors data to serial console.  Enabled only in DEBUG Mode to maximize computer performances.
+        displaySensorData();  // Output sensors data to serial console.  Enabled only in DEBUG Mode to maximize computer performances.
 
     // Persist flight data to memory 
     //@TODO:  Decide if data persistance should be moved in a state function or not
@@ -519,20 +534,27 @@ bool detectLiftoff() {  //@TODO:  To be completely rewriten using mechanical swi
      */
 
     // Old accelerometer method
-    // if(abs(gyro.z_gforce) >= 1.5 ) {
-    //     if (previousLaunchMillis == 0) {
-    //         previousLaunchMillis = millis();
-    //     }
+            // if(abs(gyro.z_gforce) >= 1.5 ) {
+            //     if (previousLaunchMillis == 0) {
+            //         previousLaunchMillis = millis();
+            //     }
 
-    //     if((millis() - previousLaunchMillis) >= 100) {
-    //         return true;
-    //     } else {
-    //         return false;
-    //     }
-    // } else {
-    //     previousLaunchMillis = 0;
-    //     return false;
-    // }
+            //     if((millis() - previousLaunchMillis) >= 100) {
+            //         return true;
+            //     } else {
+            //         return false;
+            //     }
+            // } else {
+            //     previousLaunchMillis = 0;
+            //     return false;
+            // }
+
+
+    // Simulated LiftOff detection
+    if( _CONF.SIMULATION_MODE && Altitude::current_altitude >= 2) {
+        return true;
+    }
+
 
     if(digitalRead(LAUCH_DETECTION_PIN) == HIGH ) {
         if (previousLaunchMillis == 0) {
@@ -616,7 +638,7 @@ void state_LAUNCHPAD() {
         disableCore0WDT();  // Disable Watchdog on Core-0
         Serial.println(F("**** Erassing memory....This takes a while...."));
         lr::LogSystem::format();
-        delay(20000); // 20 Sec. seems to do the job just fine
+        delay(30000); // 30 Sec. seems to do the job just fine
         enableCore0WDT();   // Enable Watchdog on Core-0
         Serial.print("Is flash chip busy? : "); Serial.println(lr::LogSystem::isBusy());
     }
@@ -690,7 +712,7 @@ void state_THRUST_ST1() {
     //Serial.println(F("state_THRUST_ST1"));
     // debug only, disable in flight condition
     // Handle communication with outside world 
-    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1 || _CONF.SIMULATION_MODE) {
         processWebSocket();
         cli.handleSerial();
     }
@@ -723,7 +745,7 @@ void state_COASTING_INTER() {
 
     // debug only, disable in flight condition
     // Handle communication with outside world 
-    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1 || _CONF.SIMULATION_MODE) {
         processWebSocket();
         cli.handleSerial();
         tbeepSequence.disable();
@@ -751,7 +773,7 @@ void state_THRUST_ST2() {
     
     // debug only, disable in flight condition
     // Handle communication with outside world 
-    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1 || _CONF.SIMULATION_MODE) {
         processWebSocket();
         cli.handleSerial();
         tbeepSequence.disable();
@@ -780,7 +802,7 @@ void state_COASTING() {
 
     // debug only, disable in flight condition
     // Handle communication with outside world 
-    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1 || _CONF.SIMULATION_MODE) {
         processWebSocket();
         cli.handleSerial();
         tbeepSequence.disable();
@@ -799,7 +821,7 @@ void state_DESCENT() {
 
     // debug only, disable in flight condition
     // Handle communication with outside world 
-    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1 || _CONF.SIMULATION_MODE) {
         processWebSocket();
         cli.handleSerial();
         tbeepSequence.disable();
@@ -818,7 +840,7 @@ void state_CHUTE_DESCENT() {
     //Serial.println(F("state_CHUTE_DESCENT"));
     // debug only, disable in flight condition
     // Handle communication with outside world 
-    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1) {
+    if (_CONF.DEBUG || _CONF.MANUAL_STATE != -1 || _CONF.SIMULATION_MODE) {
         processWebSocket();
         cli.handleSerial();
         tbeepSequence.disable();

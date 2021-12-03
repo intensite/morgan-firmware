@@ -88,6 +88,7 @@ public:
    int16_t VERSION;
    uint8_t ARMED_STATUS; 
    int8_t MANUAL_STATE; 
+   int8_t SIMULATION_MODE; 
    bool CALIBRATE;               // Trigger bit to start calibration of the sensors
 
    
