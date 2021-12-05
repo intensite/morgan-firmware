@@ -225,6 +225,10 @@ void setup() {
     led_color(LED_COLOR_BLUE);    // Set the LED to blue durring setup
 
     pinMode(PIEZO_BUZZER, OUTPUT);
+    pinMode(PYRO_CHANEL_1, OUTPUT);
+    pinMode(PYRO_CHANEL_2, OUTPUT);
+    pinMode(PYRO_CHANEL_3, OUTPUT);
+    pinMode(PYRO_CHANEL_4, OUTPUT);
     pinMode(PARACHUTE_IGNITER_PIN, OUTPUT); digitalWrite(PARACHUTE_IGNITER_PIN, LOW);
     pinMode(LAUCH_DETECTION_PIN, INPUT_PULLUP);
 

@@ -56,19 +56,19 @@ void activatePyro(uint8_t channelNum) {
     Serial.print("Firing channel #");Serial.println(channelNum);
     switch(channelNum) {
         case 1:
-            digitalWrite(PYRO_CHANEL_1, true);
+            digitalWrite(PYRO_CHANEL_1, HIGH);
             //tPyroChannel_1_Off.enableDelayed();
             break;
         case 2:
-            digitalWrite(PYRO_CHANEL_2, true);
+            digitalWrite(PYRO_CHANEL_2, HIGH);
             //tPyroChannel_2_Off.enableDelayed();
             break;
         case 3:
-            digitalWrite(PYRO_CHANEL_3, true);
+            digitalWrite(PYRO_CHANEL_3, HIGH);
             //tPyroChannel_3_Off.enableDelayed();
             break;
         case 4:
-            digitalWrite(PYRO_CHANEL_4, true);
+            digitalWrite(PYRO_CHANEL_4, HIGH);
             //tPyroChannel_4_Off.enableDelayed();
             break;
     }
